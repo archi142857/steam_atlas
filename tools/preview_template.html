@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Atlas — 화면 프리뷰</title>
+<style>
+  /* 팔레트는 라이트가 기본이다. 다크는 .phone.dark 에서 덮어쓰는 변형.
+     (레이아웃·여백·테두리 모두 라이트 기준으로 맞춰져 있다) */
+  :root{
+    --coal:#FAF8F4; --raised:#FFFFFF; --iron:#EFEBE3;
+    --steam:#1E2024; --muted:#5F6268; --dim:#8B8F96;
+    --brass:#8A6416; --brass-d:#8A6416; --ember:#A8431C;
+    --live:#1E7A50; --operable:#4A7C46; --static:#8A6416;
+    --restore:#2C6AA0; --scrap:#8B8F96; --replica:#6E4A87;
+    --line:#DFD9CE;
+    --sea:#D6E3EC; --land:#F8F5EF; --coast:#BDB5A7;
+    /* 프리뷰 페이지(폰 바깥) 자체 색 */
+    --page:#EFEBE3; --panel:#FFFFFF; --panel-line:#E3DDD2;
+    --frame:#DED8CD; --notch:#1E2024; --shadow:0 18px 44px rgba(60,50,35,.16);
+    --hover:#F7F4EE; --hover-soft:#F2EFE8; --thumb:#D8D2C7;
+    --tint:rgba(138,100,22,.13); --tint-strong:rgba(138,100,22,.16);
+    --glass:rgba(255,255,255,.94);
+    --hero:linear-gradient(135deg,#EFEBE3,#FFFFFF);
+    --hairline:1px solid var(--line);
+  }
+  .phone.dark{
+    --coal:#15171A; --raised:#1E2126; --iron:#2A2E34;
+    --steam:#E8E6E1; --muted:#9AA0A8; --dim:#6B7178;
+    --brass:#E3B863; --brass-d:#C8963E; --ember:#D9663A;
+    --live:#4CAF7D; --operable:#7FB77E; --static:#E3B863;
+    --restore:#6FA8DC; --scrap:#6B7178; --replica:#B08CC9;
+    --line:#31363D;
+    --sea:#101A24; --land:#262D37; --coast:#414A57;
+    --frame:#2C3138; --notch:#0B0C0E; --shadow:0 24px 60px rgba(0,0,0,.55);
+    --hover:#242830; --hover-soft:#1B1E23; --thumb:#33383F;
+    --tint:rgba(227,184,99,.16); --tint-strong:rgba(227,184,99,.18);
+    --glass:rgba(30,33,38,.94);
+    --hero:linear-gradient(135deg,#2A2E34,#15171A);
+    --hairline:0;
+  }
+
+  .flag{width:22px;height:16.5px;object-fit:cover;border-radius:3px;
+    border:.6px solid var(--line);display:inline-block;vertical-align:-3px;flex:0 0 auto}
+  .flag.sm{width:19px;height:14.2px;vertical-align:-2px}
+  .flag.lg{width:34px;height:25.5px;border-radius:4px}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--page);color:var(--steam);
+    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+  body{display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px}
+
+  .head{width:100%;max-width:1180px;margin-bottom:22px}
+  .head h1{margin:0 0 6px;font-size:22px;letter-spacing:-.5px}
+  .head p{margin:0;color:var(--muted);font-size:13.5;line-height:1.6}
+  .head .note{margin-top:10px;font-size:12px;color:var(--dim);line-height:1.6}
+
+  .stage{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;width:100%;max-width:1180px}
+
+  /* 폰 프레임 */
+  /* color 를 .phone 에서 다시 선언해야 라이트 전환 시 본문색이 따라온다.
+     (상속되는 건 계산된 색이지 var() 식이 아니라서 body 선언만으로는 안 바뀜) */
+  .phone{color:var(--steam);width:390px;height:800px;background:var(--coal);border-radius:38px;
+    border:1px solid var(--frame);box-shadow:var(--shadow);
+    display:flex;flex-direction:column;overflow:hidden;position:relative;flex:0 0 auto}
+  .phone::before{content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);
+    width:104px;height:24px;background:var(--notch);border-radius:14px;z-index:40}
+  /* 상태바 자리(44px)를 불투명하게 덮는다.
+     .screen 이 padding-top 으로 자리만 비워두면 목록이 그 아래로 스크롤되며 비쳐서,
+     국가 탭 위로 카드 조각이 보였다. sticky 헤더(top:0)는 패딩 아래에 붙으므로
+     이 덮개(z-index 36)가 헤더를 가리지 않는다. */
+  .phone::after{content:"";position:absolute;top:0;left:0;right:0;height:44px;
+    background:var(--coal);z-index:36;pointer-events:none;border-radius:37px 37px 0 0}
+  .screen{flex:1;overflow-y:auto;overflow-x:hidden;padding-top:44px;scrollbar-width:thin}
+  .screen::-webkit-scrollbar{width:5px}
+  .screen::-webkit-scrollbar-thumb{background:var(--thumb);border-radius:9px}
+
+  .nav{display:flex;background:var(--raised);border-top:1px solid var(--line);padding:8px 4px 12px;z-index:30}
+  .nav button{flex:1;background:none;border:0;color:var(--dim);font-size:10.5px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;cursor:pointer;font-family:inherit}
+  .nav button .ic{width:34px;height:22px;border-radius:99px;display:grid;place-items:center;transition:.16s}
+  .nav button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .nav button.on{color:var(--brass)}
+  .nav button.on .ic{background:var(--tint-strong)}
+
+  /* 공통 */
+  .pad{padding:0 16px}
+  h2.t{font-size:22px;font-weight:800;margin:14px 16px 4px;letter-spacing:-.4px}
+  .sec{display:flex;align-items:flex-end;justify-content:space-between;margin:26px 16px 12px}
+  .sec h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .sec span{font-size:12px;color:var(--muted)}
+  .lead{margin:0 16px 14px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+
+  .card{background:var(--raised);border:var(--hairline);border-radius:16px;padding:14px;
+    margin-bottom:10px;cursor:pointer;transition:background .14s,transform .14s}
+  .card:hover{background:var(--hover);transform:translateY(-1px)}
+  .card .r1{display:flex;align-items:flex-start;gap:8px}
+  .card .nm{font-size:15.5px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:5px}
+  .card .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .card .r2{display:flex;align-items:flex-end;gap:10px;margin-top:10px}
+  /* 도식 판(plate): 테마와 상관없이 항상 흰색 — 다크에서 검정·진녹·진청 도색이 묻히지 않게 (앱의 DiagramPlate 와 같음) */
+  /* 판은 폭을 꽉 채우고 그림은 가운데 — 짧은 형식(로켓호·페니다렌)이 왼쪽에 몰리지 않게 */
+  .plate{background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:9px;padding:5px 6px;display:flex;
+    justify-content:center;align-items:center;box-sizing:border-box;width:100%;color:#1E2024}
+  .card .wsvg{width:118px;flex:0 0 auto;display:block}
+  .card .wsvg .plate svg{max-width:100%;height:auto;display:block}
+  .tlsvg{width:92px;flex:0 0 auto;display:block}
+  /* .tlsvg 의 display:block 이 .plate 의 flex 를 덮어써 연표 도식이 왼쪽에 붙었다 — 판 규칙을 여기서 다시 세운다 */
+  .tlsvg.plate{padding:4px 5px;border-radius:7px;display:flex}
+  .tlsvg svg{max-width:100%;height:auto;display:block}
+  .card .wname{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;color:var(--steam)}
+  .mini{text-align:right;flex:0 0 auto}
+  .mini b{display:block;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mini i{display:block;font-size:9.5px;color:var(--muted);font-style:normal}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .pill{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:99px;
+    border:1px solid var(--line);color:var(--muted)}
+  .pill.f{border-color:currentColor}
+  .star{color:var(--brass);font-size:12px}
+  .favbtn{background:none;border:0;cursor:pointer;font-size:14px;line-height:1;padding:2px 2px 2px 6px;
+    color:var(--dim);opacity:.6;flex:0 0 auto;display:flex;align-items:center}
+  .favbtn svg{display:block}
+  .favbtn.on{opacity:1;color:var(--brass)}
+
+  /* 홈 */
+  .stats{display:flex;gap:10px;margin:12px 16px 0}
+  .stat{flex:1;background:var(--raised);border:var(--hairline);border-radius:16px;padding:14px}
+  .stat i{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .stat b{font-size:22px;font-weight:800}
+  .stat u{text-decoration:none;font-size:10.5px;color:var(--muted)}
+  .rail{display:flex;gap:12px;overflow-x:auto;padding:0 16px 6px;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .rail .card{width:280px;flex:0 0 auto;margin:0}
+  .erarow{display:flex;gap:10px;padding:12px 4px;border-radius:12px;cursor:pointer}
+  .erarow:hover{background:var(--hover-soft)}
+  .erarow .yr{width:84px;flex:0 0 auto;font-size:12px;font-weight:700;color:var(--brass);
+    font-variant-numeric:tabular-nums}
+  .erarow .nm{font-size:14px;font-weight:700}
+  .erarow .no{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .erarow .ct{font-size:11.5px;color:var(--muted);font-weight:700}
+
+  /* 탐색 */
+  .searchbar{display:flex;gap:8px;padding:12px 16px 8px;position:sticky;top:0;background:var(--coal);z-index:20}
+  .searchbar input{flex:1;background:var(--iron);border:0;border-radius:14px;color:var(--steam);
+    padding:12px 14px;font-size:13.5px;font-family:inherit;outline:none}
+  .searchbar input::placeholder{color:var(--dim)}
+  .fbtn{background:var(--iron);border:0;border-radius:12px;color:var(--steam);width:44px;
+    display:grid;place-items:center;cursor:pointer;position:relative}
+  .fbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+  .fbtn .badge{position:absolute;top:-5px;right:-5px;background:var(--brass);color:var(--coal);
+    font-size:10px;font-weight:800;border-radius:99px;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px}
+  .fbtn .badge[hidden]{display:none}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding:4px 16px 10px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:99px;
+    border:1px solid var(--line);color:var(--muted);background:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .chip.on{background:var(--tint);border-color:var(--brass-d);color:var(--brass)}
+  .chip .dot{display:inline-block;width:10px;height:10px;border-radius:99px;margin:0 5px -1px 0;border:1px solid rgba(0,0,0,.18)}
+  .chip .n{opacity:.6;font-weight:500;margin-left:3px;font-variant-numeric:tabular-nums}
+  .meta{display:flex;align-items:center;gap:8px;padding:0 18px 8px;font-size:12px;color:var(--muted)}
+  .meta b{color:var(--steam)}
+  .meta button{margin-left:auto;background:none;border:0;color:var(--brass);font-size:12px;
+    cursor:pointer;font-family:inherit;font-weight:600}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:60px 20px}
+
+  /* 국가 탭 */
+  .blurb{font-size:12.5px;line-height:1.65;color:var(--muted);margin:14px 0 12px}
+
+  /* 연표 */
+  .erahead{margin:22px 16px 12px;padding:16px;background:var(--raised);border-radius:16px;
+    border:var(--hairline);border-left:3px solid var(--brass)}
+  .erahead .rg{font-size:11.5px;font-weight:800;color:var(--brass);font-variant-numeric:tabular-nums}
+  .erahead h4{margin:4px 0 6px;font-size:18px;font-weight:800}
+  .erahead p{margin:0;font-size:12.5px;line-height:1.55;color:var(--muted)}
+  .tl{display:flex;padding:0 16px;cursor:pointer}
+  .tl:hover .tnm{color:var(--brass)}
+  .tl .yr{width:46px;flex:0 0 auto;text-align:right;font-size:11.5px;font-weight:700;color:var(--muted);
+    padding-top:12px;font-variant-numeric:tabular-nums}
+  .tl .axis{width:26px;flex:0 0 auto;display:flex;flex-direction:column;align-items:center}
+  .tl .axis .up,.tl .axis .dn{width:2px;background:var(--line)}
+  .tl .axis .up{height:14px}
+  .tl .axis .dn{flex:1}
+  .tl .axis .dot{width:9px;height:9px;border-radius:99px;flex:0 0 auto}
+  .tl .body{flex:1;padding:8px 0 14px}
+  .tl .tnm{font-size:14px;font-weight:700;display:flex;align-items:center;gap:5px;transition:.14s}
+  .tl .tsub{font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:7px}
+  .tl .thl{font-size:11px;color:var(--brass);margin-top:5px;line-height:1.45}
+
+  /* 지도 */
+  .maparea{position:relative;background:var(--sea);height:100%;display:flex;flex-direction:column}
+  .maptop{display:flex;align-items:center;gap:8px;padding:12px 16px}
+  .mapcount{background:var(--raised);border:var(--hairline);border-radius:99px;padding:8px 14px;font-size:12px;font-weight:700}
+  .mapwrap{flex:1;position:relative;overflow:hidden}
+  .mapwrap svg{width:100%;height:100%;display:block}
+  .legend{position:absolute;left:14px;bottom:14px;background:var(--glass);border:var(--hairline);border-radius:12px;padding:10px 12px}
+  .legend div{display:flex;align-items:center;gap:6px;font-size:10.5px;margin:3px 0}
+  .legend s{width:8px;height:8px;border-radius:99px;display:block;text-decoration:none}
+  .mapsel{position:absolute;left:12px;right:12px;bottom:12px}
+  .mappick{background:var(--raised);border:var(--hairline);border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);padding:6px 6px 6px;max-height:300px;overflow-y:auto}
+  .mappick .ph{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;font-size:11.5px;color:var(--muted)}
+  .mappick .ph b{color:var(--steam);font-size:12.5px}
+  .mappick .ph span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mappick .ph button{background:var(--iron);border:0;color:var(--steam);width:24px;height:24px;border-radius:99px;cursor:pointer;font-size:14px;line-height:1;font-family:inherit}
+  .mappick .pr{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;border-top:var(--hairline);padding:8px 10px;cursor:pointer;font-family:inherit;color:var(--steam);font-size:12.5px}
+  .mappick .pr:hover{background:var(--iron)}
+  .mappick .pr s{display:inline-block;width:8px;height:8px;border-radius:99px;text-decoration:none;flex:0 0 auto}
+  .mappick .pr b{font-weight:700}
+  .mappick .pr i{font-style:normal;color:var(--dim);font-size:11px;margin-left:auto;white-space:nowrap}
+  .maptop{display:flex;align-items:center;gap:8px;padding:12px 16px}
+  .maphint{font-size:10.5px;color:var(--muted)}
+  .mapwrap svg{touch-action:none;cursor:grab}
+  .mapwrap svg:active{cursor:grabbing}
+  .mapzoom{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:1px;
+    border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .mapzoom button{width:32px;height:32px;border:0;background:var(--raised);color:var(--steam);
+    font-size:15px;cursor:pointer;font-family:inherit;line-height:1}
+  .mapzoom button:hover{background:var(--iron)}
+  .mapattr{position:absolute;right:8px;bottom:6px;font-size:9px;color:var(--muted);
+    background:var(--raised);opacity:.8;padding:2px 6px;border-radius:5px}
+
+  /* 설정 */
+  .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 16px}
+  .seg button{flex:1;background:none;border:0;border-right:1px solid var(--line);color:var(--muted);
+    font-size:12.5px;font-weight:600;padding:11px 4px;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--tint);color:var(--brass)}
+  .seg button svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+  .swatches{display:flex;gap:6px;margin:14px 16px 0;background:var(--raised);
+    border:var(--hairline);border-radius:14px;padding:14px}
+  .swatches div{flex:1;text-align:center}
+  .swatches s{display:block;height:26px;border-radius:7px;border:1px solid var(--line);text-decoration:none}
+  .swatches span{font-size:10px;color:var(--muted);display:block;margin-top:5px}
+  .setrow{display:flex;gap:12px;align-items:flex-start;padding:10px 16px}
+  .setrow .ico{width:18px;flex:0 0 auto;color:var(--muted);text-align:center;font-size:14px;line-height:1.4}
+  .setrow .tt{font-size:13.5px;font-weight:600}
+  .setrow .ss{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:3px}
+  .setrow button{background:none;border:0;color:var(--brass);font-size:12px;font-weight:600;
+    cursor:pointer;font-family:inherit;padding:2px 4px}
+  .setrow button:disabled{color:var(--dim);cursor:default}
+  .databox{margin:10px 16px 0;background:var(--raised);border:var(--hairline);border-radius:16px;padding:16px}
+  .bar{height:6px;border-radius:99px;background:var(--iron);overflow:hidden;margin-top:8px}
+  .bar s{display:block;height:100%;background:var(--brass-d);border-radius:99px;text-decoration:none}
+  .sethead{font-size:11.5px;font-weight:800;letter-spacing:.7px;color:var(--muted);margin:26px 16px 10px}
+
+  /* 상세 */
+  .sheet{position:absolute;inset:0;background:var(--coal);z-index:50;display:flex;flex-direction:column;
+    animation:slide .22s ease}
+  @keyframes slide{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+  .sheet .top{display:flex;align-items:center;gap:8px;padding:52px 12px 8px}
+  .sheet .top .top-fav{width:34px;height:34px;justify-content:center;padding:0;border-radius:99px;background:var(--iron);opacity:1}
+  .sheet .top .top-fav:not(.on){color:var(--steam)}
+  .sheet .top .top-fav.on{color:var(--brass)}
+  .sheet .top button{background:var(--iron);border:0;color:var(--steam);width:34px;height:34px;
+    border-radius:99px;cursor:pointer;font-size:16px;line-height:1;font-family:inherit}
+  .sheet .bd{flex:1;overflow-y:auto;padding:0 20px 40px;scrollbar-width:thin}
+  .hero{background:var(--hero);border-radius:18px;padding:16px 14px;
+    display:grid;place-items:center;margin-bottom:10px;overflow:hidden}
+  .hero .plate{padding:16px 18px;border-radius:16px;max-width:100%}
+  /* 비교 (v0.12) — 탐색 목록 아래에 붙는 알약, 상세 상단의 ⇄ 버튼, 비교 시트 */
+  .cmppillwrap{position:sticky;bottom:12px;display:flex;justify-content:center;padding:6px 0 0;pointer-events:none;z-index:25}
+  .cmppill{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:9px 14px 9px 16px;border-radius:99px;cursor:pointer;
+    font-family:inherit;font-size:12.5px;font-weight:700;background:var(--raised);color:var(--muted);
+    box-shadow:0 4px 14px rgba(0,0,0,.28);border:var(--hairline)}
+  .cmppill.on{background:var(--brass);color:var(--coal);border-color:transparent}
+  .cmppill svg{width:16px;height:16px;flex:0 0 auto}
+  .cmppill .x{margin-left:4px;opacity:.75;font-size:15px;line-height:1;padding:0 2px}
+  .sheet .top .top-cmp{position:relative;margin-right:2px}
+  .sheet .top .top-cmp .n{position:absolute;top:-3px;right:-4px;min-width:15px;height:15px;padding:0 4px;border-radius:99px;
+    background:var(--brass);color:var(--coal);font-size:9.5px;font-weight:800;line-height:15px;text-align:center;font-style:normal}
+  .sheet .top .ttl{font-size:16px;font-weight:800}
+  .sheet .top button.txt{width:auto;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--brass);background:none}
+  .cmpheads{display:flex;gap:10px;margin-top:4px}
+  .cmphead{flex:1;min-width:0;cursor:pointer}
+  .cmphead .plate{height:34px;padding:6px 8px;border-radius:12px}
+  .cmphead .plate svg{max-height:100%;max-width:100%;height:auto}
+  .cmphead .nm{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13.5px;font-weight:800;line-height:1.25}
+  .cmphead .nm b{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .cmphead .en{font-size:11px;font-style:italic;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .cmphead .need{font-size:10.5px;font-weight:700;color:var(--ember);margin-top:3px}
+  .cmptable{margin-top:14px;border:var(--hairline);border-radius:14px;background:var(--raised);overflow:hidden}
+  .cmprow{padding:9px 12px;border-top:var(--hairline)}
+  .cmprow:first-child{border-top:0}
+  .cmprow i{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .cmprow .vals{display:flex;gap:10px;margin-top:3px;font-size:12.5px;line-height:1.4;font-variant-numeric:tabular-nums}
+  .cmprow .vals span{flex:1;min-width:0;font-weight:500;overflow-wrap:anywhere}
+  .cmprow .vals span.win{font-weight:800;color:var(--brass)}
+  .cmprow .vals span.na{color:var(--dim)}
+  .cmprow em{display:block;font-style:normal;font-size:10px;color:var(--dim);margin-top:3px}
+  .cmpempty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:80px 20px 0;color:var(--muted)}
+  .cmpempty svg{width:40px;height:40px;color:var(--dim)}
+  .cmpempty b{font-size:14.5px;color:var(--steam)}
+  .cmpempty span{font-size:12px;line-height:1.5}
+  .toast{position:absolute;left:14px;right:14px;bottom:84px;z-index:70;background:var(--steam);color:var(--coal);border-radius:10px;
+    padding:10px 14px;font-size:12.5px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);animation:slide .2s ease}
+  .toast span{flex:1}
+  .toast button{background:none;border:0;color:var(--brass-d);font-weight:800;font-family:inherit;font-size:12.5px;cursor:pointer;padding:0}
+  .phone.dark .toast button{color:var(--coal)}
+  .phone.dark .toast{color:var(--coal)}
+  .hero svg{max-width:100%;height:auto;display:block}
+  .diagnote{font-size:10.5px;color:var(--dim);margin-bottom:14px;line-height:1.5}
+  .refs{margin:0 0 10px}
+  .refs .rt,.refs summary{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;cursor:default}
+  .refs summary{cursor:pointer}
+  .ref{padding:5px 0}
+  .ref .rh{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;line-height:1.45}
+  .ref .rh .pill{flex:0 0 auto;font-size:9.5px;padding:1px 6px}
+  .ref .rh b{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}   /* 긴 서지(과학박물관 소장품명)가 칸을 넘지 않게 */
+  .ref .rn{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+  .ref .rv{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:2px;word-break:break-all}
+  .ref .rv a{color:var(--brass);text-decoration:none}
+  .sheet h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.4px}
+  .sheet .en{font-size:12px;color:var(--dim);font-style:italic;margin-top:3px}
+  .sheet .meta2{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .sheet .sum{font-size:13.5px;line-height:1.75;margin:16px 0 0}
+  .hl{background:var(--tint);border-radius:14px;padding:13px;margin-top:16px}
+  .hl div{display:flex;gap:8px;font-size:12.5px;line-height:1.5;margin:4px 0}
+  .hl div::before{content:"⚡";font-size:11px}
+  .hd{font-size:11.5px;font-weight:800;letter-spacing:.7px;color:var(--muted);margin:24px 0 10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .gcell{background:var(--raised);border:var(--hairline);border-radius:12px;padding:10px 13px}
+  .gcell i{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .gcell b{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .gcell b.na{color:var(--dim)}
+  .kv{display:flex;gap:10px;padding:7px 0;font-size:12.5px;line-height:1.5}
+  .kv i{width:76px;flex:0 0 auto;font-style:normal;color:var(--muted)}
+  .kv .accnote{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:1px}
+  .kv .sw{display:inline-block;width:13px;height:13px;border-radius:4px;
+    border:1px solid;margin-right:7px;vertical-align:-2px}
+  .loc{background:var(--raised);border:var(--hairline);border-radius:14px;padding:13px;
+    display:flex;gap:10px;align-items:flex-start;text-decoration:none;color:inherit;
+    transition:background .14s}
+  .loc:hover{background:var(--hover)}
+  .loc .ext{color:var(--brass);font-size:13px;line-height:1.5}
+  .loc .co b{color:var(--brass);font-weight:600}
+  .lochint{font-size:10.5px;color:var(--dim);margin-top:6px;line-height:1.5}
+  .loc .nm{font-size:13px;font-weight:600;line-height:1.45}
+  .loc .co{font-size:10.5px;color:var(--dim);margin-top:2px;font-variant-numeric:tabular-nums}
+  .src{font-size:11px;color:var(--dim);line-height:1.5;word-break:break-all;margin:3px 0}
+  .warn{font-size:11.5px;color:var(--ember)}
+
+  /* 오른쪽 설명 패널 */
+  .side{flex:1;min-width:300px;max-width:430px}
+  .side .box{background:var(--panel);border:1px solid var(--panel-line);border-radius:18px;padding:20px;margin-bottom:16px}
+  .side h4{margin:0 0 10px;font-size:14px;font-weight:800;letter-spacing:-.2px}
+  .side p{margin:0 0 10px;font-size:12.5px;line-height:1.75;color:var(--muted)}
+  .side p:last-child{margin-bottom:0}
+  .side code{background:var(--page);padding:1px 5px;border-radius:5px;font-size:11.5px;color:var(--brass)}
+  .side ul{margin:0;padding-left:17px}
+  .side li{font-size:12.5px;line-height:1.75;color:var(--muted);margin-bottom:5px}
+  .side b{color:var(--steam)}
+  .statbar{flex:1;height:6px;background:#E8E2D7;border-radius:9px;overflow:hidden;display:block}
+  .statbar span{display:block;height:100%;background:var(--brass-d);border-radius:9px}
+  @media (max-width:900px){ .side{max-width:none} }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>Steam Atlas — 화면 프리뷰</h1>
+  <p>Flutter 앱과 동일한 데이터·화면 구조를 브라우저에서 그대로 돌려본 것입니다. 검색·필터·국가탭·연표·지도·설정 모두 실제로 동작합니다.<br>
+  <b>라이트가 기본입니다</b> — 레이아웃·여백·테두리를 라이트 기준으로 잡고 다크를 변형으로 뒀습니다. 설정 탭에서 바꿔볼 수 있습니다(폰 안쪽에만 적용).</p>
+  <p class="note">※ 지도는 Natural Earth 110m 육지 폴리곤을 웹 메르카토르로 그린 것입니다(오프라인). 드래그·휠·＋버튼으로 이동/확대됩니다. 실제 앱은 같은 폴리곤을 밑그림으로 깔고 그 위에 OpenStreetMap 타일을 올립니다.</p>
+</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="screen" id="screen"></div>
+    <div class="nav" id="nav"></div>
+  </div>
+
+  <div class="side">
+    <div class="box">
+      <h4>이 뼈대에서 정해둔 것</h4>
+      <p><b>필터가 하나다.</b> <code>FilterQuery</code> 값 하나를 탐색·연표·지도가 공유합니다. 연표에서 "황금기 + 영국"을 걸고 지도로 넘어가면 조건이 그대로 따라갑니다. 화면마다 별도 필터 상태를 두지 않아서, 화면을 더 붙여도 규칙이 갈라지지 않습니다.</p>
+      <p><b>국기는 번들 SVG입니다.</b> 이모지 국기는 플랫폼·폰트에 따라 아예 안 보이거나(윈도우) 모양이 제각각이라 <code>flag-icons</code>(MIT)의 SVG를 앱에 넣었습니다. 16개국 합쳐 12KB라 오프라인에서도 문제없습니다.</p>
+      <p><b>위치 카드는 지도 앱으로 이어집니다.</b> 상세 화면의 '지금 있는 곳'을 탭하면 안드로이드에서는 시스템 '다음으로 열기' 창이 떠서 기기에 깔린 지도 앱(Google 지도·네이버·TMap…)을 고르고, 고른 앱이 그 시설을 <b>이름으로 검색</b>해 보여줍니다(검색어가 없는 곳은 좌표 핀 + 라벨). iOS 는 Apple 지도로 바로 열립니다. 앱에서 길게 누르면 좌표만 복사.</p>
+      <p><b>지도는 오프라인에서도 뜹니다.</b> 앱은 OSM 타일을 쓰지만, 그 아래에 Natural Earth 110m 육지 폴리곤(115KB)을 밑그림으로 깝니다. 타일을 못 받는 환경에서도 대륙 윤곽과 마커는 그대로 보입니다. 프리뷰는 이 폴리곤만으로 그린 것이라 네트워크 없이 동작합니다.</p>
+      <p><b>테마는 색 두 벌이 아니라 <code>ColorScheme</code> 한 벌씩입니다.</b> 화면 코드에는 고정 색을 쓰지 않고 <code>scheme.primary</code>·<code>statusColor()</code>만 참조해서, 라이트에서도 보존 상태 색이 흰 배경에서 읽히도록 같은 색조를 어둡게 잡았습니다.</p>
+      <p><b>데이터 소스가 갈아끼워집니다.</b> 지금은 번들 JSON을 읽지만 <code>LocomotiveSource</code>가 인터페이스라, 나중에 서버 API나 SQLite로 바꿔도 화면 코드는 그대로입니다.</p>
+      <p><b>사진 없이도 형식이 구분됩니다.</b> 사진 확보가 제일 오래 걸리는 작업이라, 그동안은 Whyte 표기를 차륜 도식으로 그려 고속형(큰 동륜 3축)과 견인형(작은 동륜 5축)이 목록에서 바로 갈리게 했습니다.</p>
+    </div>
+    <div class="box">
+      <h4>수록 현황</h4>
+      <div id="statbox"></div>
+    </div>
+    <div class="box">
+      <h4>다음에 정할 것</h4>
+      <ul>
+        <li><b>사진</b> — Wikimedia Commons의 CC/PD 이미지부터. 라이선스·저작자 필드를 스키마에 추가해야 합니다.</li>
+        <li><b>제원 검증</b> — 견인력·출력은 자료마다 값이 갈립니다. 지금은 <code>verified</code> 플래그로 확인한 것만 표시해뒀습니다.</li>
+        <li><b>비교 기능</b> — v0.12 에 들어갔습니다. 상세의 ⇄ 버튼으로 2량을 넣으면 비교 시트가 열립니다. 중량은 기준(단독/+탄수차)이 같을 때만 대조합니다.</li>
+        <li><b>테마 세부</b> — 지금은 라이트/다크/시스템 3단계입니다. 폰트 크기나 고대비 모드가 필요하면 설정 탭에 이어 붙이면 됩니다.</li>
+        <li><b>국가 추가</b> — 스페인·브라질·뉴질랜드·대만, 그리고 확인 가능한 범위의 북한 보존 차량.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = __LOCO_DATA__;
+const COUNTRIES = __COUNTRY_DATA__;
+const FLAGS = __FLAG_DATA__;   // { "KR": "data:image/svg+xml;base64,...", ... }
+const WORLD = __WORLD_DATA__;  // Natural Earth 110m 육지 폴리곤
+const flagImg=(code,cls='')=>
+  `<img class="flag ${cls}" src="${FLAGS[code]||''}" alt="${code}" title="${code}">`;
+const ERAS = DATA.eras;
+const LOCOS = DATA.locomotives;
+// 도색 팔레트 — id 로 찾아 도식에 칠한다 (Flutter 의 LocomotiveRepository.liveryOf 와 동일)
+const LIVERIES = Object.fromEntries((DATA.liveries||[]).map(v=>[v.id,v]));
+const liveryOf = l => LIVERIES[l.livery] || null;
+// 도색 색상 계열 — build_seed.livery_family 가 정한 값(Livery.family). 순서·라벨·견본색은 앱의 LiveryFamily 와 같다.
+const LIVERY_FAMILIES=[['black','검정','#2A2D33'],['gray','회색','#8E949C'],['green','녹색','#2C5741'],['blue','파랑','#1E3A6E'],['red','빨강','#8E2226'],['yellow','노랑','#C9A227']];
+// 실루엣 유형 — 굴뚝 높이·운전실·유선형 케이싱을 도식에 반영한다
+// (Flutter 의 LocoShape / LocomotiveRepository.shapeOf 와 동일)
+const SHAPES = Object.fromEntries((DATA.shapes||[]).map(v=>[v.id,v]));
+const GENERAL_REFS = DATA.references||[];   // 여러 나라에 걸친 종합 문헌
+const SHAPE_FALLBACK = {id:'classic',nameKo:'표준형',chimney:'mid',cab:'full',domes:0,
+  casing:'none',lamp:false,pilot:false,cylinder:'outside',note:''};
+const shapeOf = l => SHAPES[l.shape] || SHAPE_FALLBACK;
+const CBY = Object.fromEntries(COUNTRIES.map(c=>[c.code,c]));
+const EBY = Object.fromEntries(ERAS.map(e=>[e.id,e]));
+
+const STATUS_LABEL={operational:'운행 중',operable:'동태보존',static:'정태보존',
+  restoration:'복원 중',scrapped:'현존 없음',replica:'복제품'};
+const STATUS_COLOR={operational:'var(--live)',operable:'var(--operable)',static:'var(--static)',
+  restoration:'var(--restore)',scrapped:'var(--scrap)',replica:'var(--replica)'};
+const SERVICE_LABEL={express:'급행 여객',mixed:'혼합용',freight:'화물',tank:'탱크식',
+  articulated:'관절식',narrow:'협궤',rack:'치차식'};
+const ALIVE=new Set(['operational','operable']);
+
+const SORTS={year:'제작연도',speed:'최고속도',power:'견인력',weight:'중량',name:'이름'};
+
+let state={tab:0,text:'',countries:new Set(),eras:new Set(),services:new Set(),
+  statuses:new Set(),iconicOnly:false,aliveOnly:false,sort:'year',desc:false,
+  liveryFams:new Set(),shapes:new Set(),   // 도색 계열 · 생김새 (v0.12)
+  detail:null,mapSel:null,mapPick:null,   // mapPick: 같은 자리에 겹친 량들의 id 목록 (지도 아래 고르기)
+  compare:[],compareOpen:false,   // 비교: 최대 2량 (셋째를 넣으면 먼저 넣은 것이 빠짐)
+  theme:'light',                // system | light | dark — 라이트가 기본
+  favorites:new Set(),
+  map:null,               // 지도 확대/이동 {z,tx,ty} — 첫 표시 때 mapHome() 으로 채움
+  mapH:0};                // 지도 칸의 실제 높이(viewBox 단위) — 첫 표시 때 측정
+
+// system 선택 시 브라우저(=기기) 설정을 따른다
+const effectiveTheme=()=>state.theme==='system'
+  ? (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')
+  : state.theme;
+
+// ── 한글 검색 (lib/core/hangul.dart 와 같은 규칙) ──
+// 자모가 분리된 입력(NFD)은 NFC 로 합치고, 공백은 무시하고, 초성만 치면 초성으로 찾는다.
+const CHO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const searchKey=s=>s.normalize('NFC').toLowerCase().replace(/\s+/g,'');
+const initials=s=>[...s.normalize('NFC')].map(ch=>{
+  const c=ch.codePointAt(0);
+  if(c>=0xAC00&&c<=0xD7A3) return CHO[Math.floor((c-0xAC00)/588)];
+  return /\s/.test(ch)?'':ch.toLowerCase();
+}).join('');
+const isChoseongQuery=s=>{ const t=s.replace(/\s+/g,''); return !!t && [...t].every(ch=>{const c=ch.codePointAt(0);return c>=0x3131&&c<=0x314E;}); };
+
+const idx={}, choIdx={};
+LOCOS.forEach(l=>{ const raw=[l.nameKo,l.nameEn,l.nickname||'',l.classDesignation,l.roadNumber||'',
+  l.wheel.whyte,l.wheel.typeName||'',l.designer||'',...l.operators,...l.builders,...l.tags].join(' ');
+  idx[l.id]=searchKey(raw); choIdx[l.id]=initials(raw); });
+
+function activeCount(){
+  return (state.text?1:0)+state.countries.size+state.eras.size+state.services.size+
+    state.statuses.size+state.liveryFams.size+state.shapes.size+(state.iconicOnly?1:0)+(state.aliveOnly?1:0);
+}
+function query(over={}){
+  const s={...state,...over};
+  const cho=isChoseongQuery(s.text);
+  const n=cho?initials(s.text):searchKey(s.text);
+  const ix=cho?choIdx:idx;
+  let r=LOCOS.filter(l=>{
+    if(n && !ix[l.id].includes(n)) return false;
+    if(s.countries.size && !s.countries.has(l.countryCode)) return false;
+    if(s.eras.size && !s.eras.has(l.era)) return false;
+    if(s.services.size && !s.services.has(l.serviceType)) return false;
+    if(s.statuses.size && !s.statuses.has(l.status)) return false;
+    // 도색 계열은 도색 카탈로그(Livery.family)를 거쳐 본다 — 앱의 LocomotiveRepository.query 와 같은 규칙
+    if(s.liveryFams.size && !s.liveryFams.has(liveryOf(l)?.family)) return false;
+    if(s.shapes.size && !s.shapes.has(shapeOf(l).id)) return false;
+    if(s.iconicOnly && !l.iconic) return false;
+    if(s.aliveOnly && !ALIVE.has(l.status)) return false;
+    return true;
+  });
+  const key={year:l=>l.builtFrom??l.builtTo,speed:l=>l.specs.topSpeedKmh,
+    power:l=>l.specs.tractiveEffortKn,weight:l=>l.specs.weightT,name:l=>l.nameKo};
+  const f=key[s.sort], dir=s.desc?-1:1;
+  // 내림차순이라고 목록을 통째로 뒤집으면 값 없는 항목(—)이 맨 위로 온다.
+  // 값 있는 것끼리만 방향을 바꾸고, 값 없는 항목은 어느 방향이든 맨 뒤.
+  r.sort((a,b)=>{
+    const x=f(a),y=f(b);
+    if(x==null&&y==null) return a.nameKo.localeCompare(b.nameKo,'ko');
+    if(x==null) return 1; if(y==null) return -1;
+    return dir*(typeof x==='string' ? x.localeCompare(y,'ko') : x-y);
+  });
+  return r;
+}
+
+// ── 포맷 ──
+const dash='—';
+const nf=v=>v==null?dash:Number(v).toLocaleString('en-US');
+const fSpeed=v=>v==null?dash:`${v} km/h`;
+const fTe=v=>v==null?dash:`${nf(v)} kN`;
+const fPow=v=>v==null?dash:`${nf(v)} kW`;
+const fW=v=>v==null?dash:`${v.toFixed(1)} t`;
+const fMm=v=>v==null?dash:`${nf(v)} mm`;
+const fBar=v=>v==null?dash:`${v.toFixed(1)} bar`;
+function gaugeName(mm){return {1435:'1,435mm 표준궤',1520:'1,520mm 러시아 광궤',1600:'1,600mm 아이리시 광궤',
+  1676:'1,676mm 인도 광궤',1067:'1,067mm 케이프궤간',1000:'1,000mm 미터궤',762:'762mm 협궤',
+  750:'750mm 협궤',610:'610mm 협궤',1219:'1,219mm (초기 궤간)'}[mm]||`${nf(mm)}mm`;}
+// 표준궤보다 좁으면 전부 협궤(1,067mm 도). '중간궤' 는 없는 말이었다. 표준궤가 아니면 mm 를 같이 적는다.
+function gaugeShort(mm){return mm===1435?'표준궤':`${mm>1435?'광궤':'협궤'} ${nf(mm)}`;}
+function builtLabel(l){ if(l.builtFrom==null) return dash;
+  return (l.builtTo==null||l.builtTo===l.builtFrom)?`${l.builtFrom}`:`${l.builtFrom}–${l.builtTo}`;}
+// 저장(북마크) 아이콘 — 앱의 Icons.bookmark(_border)_rounded 와 같은 모양. ☆ 를 쓰면 이름 옆 '대표 명차' ★ 와 헷갈린다.
+function bookmarkIcon(on){
+  return `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+    fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"
+    ><path d="M6 4.5h12a1 1 0 0 1 1 1V20l-7-4-7 4V5.5a1 1 0 0 1 1-1z"/></svg>`;
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ── 차륜 도식 ──
+// Flutter 의 lib/widgets/whyte_diagram.dart 와 같은 알고리즘.
+// 폭을 정확히 계산해서 반환하므로 4-8-8-4 같은 긴 형식도 잘리지 않는다.
+function whyteLayout(whyte, tenderAxles, h, shape){
+  const S = shape || SHAPE_FALLBACK;
+  const bigR=h*0.22, smallR=h*0.13, tenderR=h*0.115, baseY=h*0.88;
+  const pad=h*0.05, wheelGap=h*0.05, groupGap=h*0.06, unitGap=h*0.14, couplingGap=h*0.18;
+  const isTank=/t/i.test(whyte);
+  const outsideCyl = S.cylinder==='outside';
+
+  // "4-8-2+2-8-4" → [[4,8,2],[2,8,4]]  (가라트: 엔진 유닛 2개)
+  const parsed = whyte.split('+').map(u =>
+    u.split('-').map(p => parseInt(p.replace(/[^0-9]/g,'')) || 0));
+
+  // 앞쪽 여유. 카우캐처는 차체보다 앞으로 튀어나오고, 선륜이 없는 형식(0-4-0 등)은
+  // 바깥 실린더가 맨 앞에 놓이므로 자리를 비워둬야 잘리지 않는다.
+  const noLeading = parsed[0][0]===0;
+  const frontPad = (S.pilot?h*0.13:0) + ((outsideCyl && noLeading)?h*0.15:0);
+
+  let x=pad+frontPad;
+  const wheels=[], tenderWheels=[], units=[], driverGroups=[];
+
+  parsed.forEach((groups, ui)=>{
+    const unitStart=x;
+    groups.forEach((cnt, gi)=>{
+      const isDriver = groups.length>=3 && gi>0 && gi<groups.length-1;
+      const r = isDriver?bigR:smallR;
+      const axles = Math.floor(cnt/2);
+      const idx=[];
+      for(let a=0;a<axles;a++){
+        idx.push(wheels.length);
+        wheels.push({cx:x+r, cy:baseY-r, r, driver:isDriver});
+        x += r*2 + wheelGap;
+      }
+      // 커플링로드는 한 그룹 안에서만 걸린다 — 관절식은 프레임이 따로라 로드도 따로다
+      if(isDriver && idx.length) driverGroups.push(idx);
+      if(axles>0) x += groupGap;
+    });
+    units.push({start:unitStart, end:x-wheelGap-groupGap});
+    if(ui<parsed.length-1) x += unitGap;
+  });
+
+  let tender=null;
+  if(tenderAxles>0){
+    x += couplingGap;
+    const start=x;
+    for(let i=0;i<tenderAxles;i++){
+      tenderWheels.push({cx:x+tenderR, cy:baseY-tenderR, r:tenderR, driver:false});
+      x += tenderR*2 + wheelGap;
+    }
+    tender={start, end:x-wheelGap};
+  }
+
+  return {h,bigR,smallR,tenderR,baseY,isTank,frontPad,wheels,tenderWheels,units,
+          driverGroups,tender,width:x+pad, showBody:h>=22};
+}
+
+// 크랭크 핀. 한 묶음 안의 동륜은 모두 같은 위상이어야 로드가 뻣뻣한 막대로 성립한다
+const crankPin = w => ({x:w.cx+w.r*0.45, y:w.cy+w.r*0.20});
+
+function whyteSvg(whyte, h=32, color='#9AA0A8', tenderAxles=0, livery=null, shape=null){
+  const S = shape || SHAPE_FALLBACK;
+  const L=whyteLayout(whyte, tenderAxles, h, S);
+  const sw=(h*0.022+0.5).toFixed(2);
+  // 도색이 있으면 차체를 칠하고 그 도색의 윤곽색으로 선을 긋는다.
+  // 판이 항상 흰색이라 테마와 무관하게 실제 도색(라이트 팔레트)을 쓴다
+  const line=livery ? livery.line : color;
+  const bodyFill=livery ? livery.body : 'none';
+  // 차체 위에 얹히는 선은 차체와 대비되는 edge 색 — 검은 도색이 덩어리로 뭉개지지 않게
+  const edge=livery ? livery.edge : color;
+  const ST=`fill="none" stroke="${line}" stroke-width="${sw}" stroke-linejoin="round"`;
+  const B=`fill="${bodyFill}" stroke="${edge}" stroke-width="${sw}" stroke-linejoin="round"`;
+  // 2색 도색 (v0.12): 둘째 색은 정해진 부위(보일러·운전실+탄수차+치마·굴뚝·바퀴)에만. 앱의 _WhytePainter.fillFor 와 같다.
+  const acc=livery&&livery.accent||null;
+  const BA=role=>(acc&&acc.role===role)?`fill="${acc.color}" stroke="${edge}" stroke-width="${sw}" stroke-linejoin="round"`:B;
+  const n=v=>v.toFixed(1);
+  const rect=(x1,y1,x2,y2,rx,attrs=B)=>`<rect x="${n(x1)}" y="${n(y1)}"
+    width="${n(x2-x1)}" height="${n(y2-y1)}" ${rx?`rx="${n(rx)}"`:''} ${attrs}/>`;
+  let bodyOut='', cylOut='', rodOut='';
+
+  const fine = h>=28;   // 돔·창문은 이보다 작으면 점으로 뭉개진다
+  const bodyBottom=L.baseY-L.bigR*2-h*0.02;
+  const bodyTop=bodyBottom-h*0.20;
+  const cabTop=bodyBottom-h*0.34;
+  const hasBody = L.showBody && L.units.length;
+  const bodyStart = hasBody ? L.units[0].start : 0;
+  const bodyEnd = hasBody ? L.units[L.units.length-1].end : 0;
+  // 가라트는 보일러가 두 엔진 유닛 사이에 걸리고 물·석탄은 양 끝 유닛 위에 얹힌다
+  const isGarratt = L.units.length>1;
+  const u0 = hasBody ? L.units[0] : {start:0,end:0};
+  const u1 = hasBody ? L.units[L.units.length-1] : {start:0,end:0};
+  const boilerStart = isGarratt ? u0.start+(u0.end-u0.start)*0.55 : bodyStart;
+  const boilerEnd   = isGarratt ? u1.end-(u1.end-u1.start)*0.55 : bodyEnd;
+  const boilerW = boilerEnd-boilerStart;
+
+  if(hasBody && boilerW>0){
+    const cabW=Math.min(Math.max(boilerW*0.24, h*0.16), boilerW*0.4);
+    const cabX=boilerEnd-cabW;
+
+    if(S.casing==='full'){
+      // ── 유선형: 굴뚝·운전실 없이 통짜 껍데기 하나 ──
+      const shellTop=bodyBottom-h*0.32;
+      const nose=Math.min(h*0.26, boilerW*0.5);
+      bodyOut+=`<path d="M${n(boilerStart)} ${n(bodyBottom)}
+        L${n(boilerStart)} ${n(bodyBottom-h*0.05)}
+        Q${n(boilerStart+nose*0.28)} ${n(shellTop)} ${n(boilerStart+nose)} ${n(shellTop)}
+        L${n(boilerEnd)} ${n(shellTop)} L${n(boilerEnd)} ${n(bodyBottom)} Z" ${B}/>`;
+      bodyOut+=rect(boilerStart, bodyBottom, boilerEnd, bodyBottom+h*0.07, 0);
+      if(fine) bodyOut+=`<line x1="${n(cabX+cabW*0.15)}" y1="${n(shellTop+h*0.06)}"
+        x2="${n(cabX+cabW*0.85)}" y2="${n(shellTop+h*0.06)}"
+        stroke="${edge}" stroke-width="${sw}"/>`;
+    } else {
+      // ── 일반: 보일러 + 운전실 + 굴뚝 ──
+      const fr = S.casing==='half' ? h*0.11 : h*0.05;
+      bodyOut+=`<path d="M${n(boilerStart+fr)} ${n(bodyTop)} L${n(boilerEnd-h*0.05)} ${n(bodyTop)}
+        Q${n(boilerEnd)} ${n(bodyTop)} ${n(boilerEnd)} ${n(bodyTop+h*0.05)}
+        L${n(boilerEnd)} ${n(bodyBottom-h*0.05)} Q${n(boilerEnd)} ${n(bodyBottom)} ${n(boilerEnd-h*0.05)} ${n(bodyBottom)}
+        L${n(boilerStart+h*0.05)} ${n(bodyBottom)} Q${n(boilerStart)} ${n(bodyBottom)} ${n(boilerStart)} ${n(bodyBottom-h*0.05)}
+        L${n(boilerStart)} ${n(bodyTop+fr)} Q${n(boilerStart)} ${n(bodyTop)} ${n(boilerStart+fr)} ${n(bodyTop)} Z" ${BA('boiler')}/>`;
+
+      // 연실(스모크박스) 이음선
+      if(fine && boilerW>h*0.7){
+        const sx=boilerStart+Math.min(Math.max(boilerW*0.22, h*0.14), h*0.34);
+        bodyOut+=`<line x1="${n(sx)}" y1="${n(bodyTop+h*0.01)}" x2="${n(sx)}" y2="${n(bodyBottom-h*0.01)}"
+          stroke="${edge}" stroke-width="${sw}"/>`;
+      }
+
+      // 운전실
+      if(S.cab!=='none'){
+        const top = S.cab==='open' ? bodyBottom-h*0.24 : cabTop;
+        const w = S.cab==='open' ? cabW*0.85 : cabW;
+        const cx = boilerEnd-w;
+        bodyOut+=rect(cx, top, cx+w, bodyBottom, h*0.05, BA('cabTender'));
+        if(fine && S.cab==='full' && w>h*0.20)
+          bodyOut+=`<rect x="${n(cx+w*0.22)}" y="${n(top+h*0.05)}" width="${n(w*0.36)}"
+            height="${n(h*0.085)}" fill="none" stroke="${edge}" stroke-width="${sw}"/>`;
+      }
+
+      // 굴뚝
+      const ch = S.chimney==='tall'?h*0.20 : S.chimney==='mid'?h*0.11 :
+                 S.chimney==='short'?h*0.07 : 0;
+      if(ch>0){
+        const cx0=boilerStart+h*0.06;
+        bodyOut+=rect(cx0, bodyTop-ch, cx0+h*0.10, bodyTop, 0, BA('chimney'));
+        if(fine){
+          const lip = S.chimney==='tall' ? h*0.030 : h*0.020;
+          bodyOut+=rect(cx0-lip, bodyTop-ch, cx0+h*0.10+lip, bodyTop-ch+h*0.035, 0);
+        }
+      }
+
+      if(S.casing==='half') bodyOut+=rect(boilerStart, bodyBottom, boilerEnd, bodyBottom+h*0.06, 0, BA('cabTender'));
+
+      // 증기돔·모래돔
+      if(fine && S.domes>0 && !L.isTank){
+        const r=h*0.055;
+        const xs = S.domes>=2 ? [boilerStart+boilerW*0.42, boilerStart+boilerW*0.62]
+                              : [boilerStart+boilerW*0.48];
+        xs.forEach(dx=>{
+          bodyOut+=`<path d="M${n(dx-r)} ${n(bodyTop)} A${n(r)} ${n(r)} 0 0 1 ${n(dx+r)} ${n(bodyTop)} Z" ${B}/>`;
+        });
+      }
+    }
+
+    // 가라트 — 앞뒤 엔진 유닛 위에 얹힌 물탱크·석탄고
+    if(isGarratt){
+      [[u0.start, boilerStart],[boilerEnd, u1.end]].forEach(([x1,x2])=>{
+        if(x2-x1>h*0.10) bodyOut+=rect(x1, bodyBottom-h*0.10, x2, bodyBottom, h*0.04);
+      });
+    }
+
+    // 탱크식 물탱크
+    if(L.isTank && S.casing!=='full'){
+      const tw=Math.min(boilerW*0.42, cabX-boilerStart-h*0.20);
+      if(tw>h*0.15)
+        bodyOut+=rect(boilerStart+h*0.20, bodyTop-h*0.07, boilerStart+h*0.20+tw, bodyBottom, h*0.03);
+    }
+
+    // 앞 전조등
+    if(fine && S.lamp){
+      const cy = S.casing==='full' ? bodyBottom-h*0.10 : (bodyTop+bodyBottom)/2;
+      bodyOut+=`<circle cx="${n(boilerStart+h*0.06)}" cy="${n(cy)}" r="${n(h*0.045)}" ${B}/>`;
+    }
+
+    // 카우캐처
+    if(S.pilot){
+      bodyOut+=`<path d="M${n(bodyStart)} ${n(bodyBottom+h*0.02)} L${n(bodyStart)} ${n(L.baseY)}
+        L${n(bodyStart-h*0.13)} ${n(L.baseY)} Z" ${B}/>`;
+    }
+  }
+
+  // ── 실린더 ──
+  // 위치는 언제나 동륜군 바로 앞. 바깥 실린더는 프레임 바깥(로드와 같은 면)이라
+  // 옆에서 보면 바퀴를 가리므로 바퀴 위에 덧그린다.
+  const rodY = L.wheels.length ? (L.baseY-L.bigR+L.bigR*0.20) : 0;
+  const cylH=h*0.11;
+  const cylRears=[];
+  if(hasBody && S.cylinder==='outside'){
+    L.driverGroups.forEach((g, gi)=>{
+      // 가라트는 엔진 유닛의 바깥쪽 끝에 실린더가 붙는다 —
+      // 뒤 유닛의 실린더는 기관차 맨 뒤에서 앞을 향한다
+      if(isGarratt && gi===L.driverGroups.length-1){
+        const last=L.wheels[g[g.length-1]];
+        const front=last.cx+last.r+h*0.03;
+        if(front+h*0.17<=L.width){
+          cylOut+=rect(front, rodY-cylH/2, front+h*0.17, rodY+cylH/2, 0);
+          cylRears.push(front);
+        } else cylRears.push(NaN);
+        return;
+      }
+      const fi=g[0], first=L.wheels[fi];
+      const prevRight = fi===0 ? 0 : L.wheels[fi-1].cx+L.wheels[fi-1].r;
+      const rear = first.cx-first.r-h*0.03;
+      const cylW = Math.min(h*0.17, gi===0 ? h*0.17 : rear-prevRight+h*0.06);
+      if(cylW>=h*0.07 && rear-cylW>=0){
+        cylOut+=rect(rear-cylW, rodY-cylH/2, rear, rodY+cylH/2, 0);
+        cylRears.push(rear);
+      } else cylRears.push(NaN);
+    });
+  }
+
+  // ── 바퀴 ──
+  let wheelOut='';
+  const wheelAcc = acc&&acc.role==='wheels'&&livery;   // 독일·소련·중국·폴란드의 빨간 주행부
+  [...L.wheels, ...L.tenderWheels].forEach(w=>{
+    wheelOut+=`<circle cx="${n(w.cx)}" cy="${n(w.cy)}" r="${n(w.r)}"
+      fill="${wheelAcc?acc.color:line}" fill-opacity="${wheelAcc?0.9:0.15}" stroke="${line}" stroke-width="${sw}"/>`;
+  });
+
+  // ── 로드 (바퀴 위에) ──
+  if(L.showBody){
+    const rodW=h*0.030+0.6, mainW=h*0.038+0.7;
+    if(S.cylinder==='beam'){
+      // 페니다렌 — 기어 구동이라 커플링로드가 없고 큰 플라이휠이 붙는다
+      if(L.wheels.length){
+        // 주행륜보다 크고 높이 달린 플라이휠 — 바퀴로 오인되지 않게 크기를 벌린다
+        const r=h*0.26;
+        const cx=(L.wheels[0].cx+L.wheels[L.wheels.length-1].cx)/2, cy=bodyBottom+h*0.10;
+        rodOut+=`<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="none"
+          stroke="${edge}" stroke-width="${sw}"/>`;
+        rodOut+=`<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(h*0.022+0.6)}" fill="${edge}"/>`;
+        if(h>=28) [0,1.047,2.094].forEach(a=>{
+          const dx=r*0.94*Math.cos(a), dy=r*0.94*Math.sin(a);
+          rodOut+=`<line x1="${n(cx-dx)}" y1="${n(cy-dy)}" x2="${n(cx+dx)}" y2="${n(cy+dy)}"
+            stroke="${edge}" stroke-width="${sw}"/>`;
+        });
+        const px=cx+r*0.55, py=cy+r*0.25;
+        rodOut+=`<line x1="${n(boilerStart+h*0.14)}" y1="${n(bodyBottom-h*0.05)}"
+          x2="${n(px)}" y2="${n(py)}" stroke="${edge}" stroke-width="${rodW.toFixed(2)}"
+          stroke-linecap="round"/>`;
+        rodOut+=`<circle cx="${n(px)}" cy="${n(py)}" r="${n(h*0.024+0.6)}" fill="${edge}"/>`;
+      }
+    } else {
+      // 커플링로드 — 동륜이 2축 이상인 묶음마다 하나씩
+      L.driverGroups.forEach(g=>{
+        if(g.length<2) return;
+        const a=crankPin(L.wheels[g[0]]), b=crankPin(L.wheels[g[g.length-1]]);
+        rodOut+=`<rect x="${n(a.x-rodW*0.6)}" y="${n(a.y-rodW/2)}"
+          width="${n(b.x-a.x+rodW*1.2)}" height="${n(rodW)}" rx="${n(rodW/2)}" fill="${edge}"/>`;
+      });
+      // 메인로드 + 크로스헤드 — 바깥 실린더일 때만 보인다
+      const rearUnitIdx = isGarratt ? L.driverGroups.length-1 : -1;
+      cylRears.forEach((rear, gi)=>{
+        const g=L.driverGroups[gi]; if(!g || Number.isNaN(rear)) return;
+        // 메인 동륜은 보통 그룹의 두 번째 축 (뒤에서 미는 유닛이면 뒤에서 두 번째)
+        const mi = gi===rearUnitIdx ? (g.length>=2?g.length-2:0) : (g.length>=2?1:0);
+        const main=crankPin(L.wheels[g[mi]]);
+        const off = gi===rearUnitIdx ? -h*0.02 : h*0.02;
+        rodOut+=`<line x1="${n(rear)}" y1="${n(rodY)}" x2="${n(main.x)}" y2="${n(main.y)}"
+          stroke="${edge}" stroke-width="${mainW.toFixed(2)}" stroke-linecap="round"/>`;
+        rodOut+=`<rect x="${n(rear+off-h*0.0275)}" y="${n(rodY-h*0.035)}"
+          width="${n(h*0.055)}" height="${n(h*0.07)}" fill="${edge}"/>`;
+      });
+      // 로켓호 — 보일러 뒤 경사 실린더에서 앞 동륜으로 내려오는 연결봉
+      if(S.cylinder==='angled' && L.wheels.length){
+        const d=L.wheels.find(w=>w.driver)||L.wheels[0], p=crankPin(d);
+        const fx=boilerStart+boilerW-h*0.05, fy=bodyTop+h*0.04;
+        rodOut+=`<line x1="${n(fx)}" y1="${n(fy)}" x2="${n(p.x)}" y2="${n(p.y)}"
+          stroke="${edge}" stroke-width="${mainW.toFixed(2)}" stroke-linecap="round"/>`;
+        rodOut+=`<circle cx="${n(fx)}" cy="${n(fy)}" r="${n(h*0.055)}" ${B}/>`;
+      }
+      // 로코모션 1호 — 보일러 위 수직 실린더에서 곧장 내려오는 연결봉
+      if(S.cylinder==='vertical' && L.wheels.length){
+        const cx=boilerStart+boilerW*0.62, top=bodyTop-h*0.12;
+        // 수직 실린더는 바로 아래 동륜을 민다 — 가장 가까운 동륜을 고른다
+        const ds=L.wheels.filter(w=>w.driver);
+        const d=(ds.length?ds:L.wheels).reduce((a,b)=>
+          Math.abs(a.cx-cx)<=Math.abs(b.cx-cx)?a:b);
+        const p=crankPin(d);
+        rodOut+=rect(cx-h*0.04, top, cx+h*0.04, bodyTop, 0);
+        rodOut+=`<line x1="${n(cx)}" y1="${n(top+h*0.02)}" x2="${n(p.x)}" y2="${n(p.y)}"
+          stroke="${edge}" stroke-width="${rodW.toFixed(2)}" stroke-linecap="round"/>`;
+      }
+    }
+  }
+
+  // 크랭크 핀 — 기어 구동(페니다렌)에는 없다
+  if(S.cylinder!=='beam') L.wheels.filter(w=>w.driver).forEach(w=>{
+    const p=crankPin(w);
+    rodOut+=`<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(h*0.028+0.6)}" fill="${line}"/>`;
+  });
+
+  // ── 레일 ──
+  let out = bodyOut + wheelOut + cylOut + rodOut;
+  out+=`<line x1="0" y1="${n(L.baseY+h*0.02)}" x2="${n(L.width)}"
+    y2="${n(L.baseY+h*0.02)}" stroke="${line}" stroke-opacity=".45"
+    stroke-width="${(h*0.02+0.4).toFixed(2)}"/>`;
+
+  // ── 탄수차 ──
+  if(hasBody && L.tender){
+    const low = S.cab!=='full';   // 초기 기관차의 탄수차는 뚜껑 없는 낮은 화차에 가까웠다
+    const tB=L.baseY-L.tenderR*2-h*0.02, tT=tB-(low?h*0.14:h*0.22);
+    out+=`<rect x="${n(L.tender.start-h*0.04)}" y="${n(tT)}"
+      width="${n(L.tender.end-L.tender.start+h*0.08)}"
+      height="${n(tB-tT)}" rx="${n(h*0.04)}" ${BA('cabTender')}/>`;
+    out+=`<line x1="${n(L.units[L.units.length-1].end)}" y1="${n(tB+h*0.10)}"
+      x2="${n(L.tender.start-h*0.04)}" y2="${n(tB+h*0.10)}" ${ST}/>`;
+  }
+
+  return `<svg width="${L.width.toFixed(0)}" height="${h}" viewBox="0 0 ${n(L.width)} ${h}">${out}</svg>`;
+}
+
+// 데이터에 값이 없으면 크기·연대로 추정 (Flutter 의 effectiveTenderAxles 와 동일)
+function tenderAxlesOf(l){
+  if(l.tenderAxles!=null) return l.tenderAxles;
+  if(/t/i.test(l.wheel.whyte) || l.wheel.whyte.includes('+')) return 0;
+  if(l.serviceType==='tank' || l.serviceType==='rack') return 0;
+  if(l.builtFrom!=null && l.builtFrom<1850) return 2;
+  const w=l.specs.weightT;
+  if(w==null) return 3;
+  if(w<60) return 2;
+  if(w<120) return 3;
+  if(w<260) return 4;
+  if(w<420) return 5;
+  return 6;
+}
+
+// ── 카드 ──
+function cardHtml(l){
+  const c=CBY[l.countryCode]||{flag:''};
+  const sc=STATUS_COLOR[l.status];
+  return `<div class="card" data-id="${l.id}">
+    <div class="r1">
+      ${flagImg(l.countryCode)}
+      <div style="flex:1;min-width:0">
+        <div class="nm">${esc(l.nameKo)}${l.iconic?'<span class="star">★</span>':''}</div>
+        <div class="sub">${esc(l.classDesignation)} · ${builtLabel(l)}</div>
+      </div>
+      <button class="favbtn ${state.favorites.has(l.id)?'on':''}" data-fav="${l.id}"
+        title="저장">${bookmarkIcon(state.favorites.has(l.id))}</button>
+    </div>
+    <div class="r2">
+      <div class="wsvg">
+        <span class="plate">${whyteSvg(l.wheel.whyte,30,'currentColor',tenderAxlesOf(l),liveryOf(l),shapeOf(l))}</span>
+        <div class="wname">${l.wheel.whyte}${l.wheel.typeName?` · ${l.wheel.typeName}`:''}</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="mini"><i>최고속도</i><b>${fSpeed(l.specs.topSpeedKmh)}</b></div>
+      <div class="mini"><i>견인력</i><b>${fTe(l.specs.tractiveEffortKn)}</b></div>
+    </div>
+    <div class="pills">
+      <span class="pill f" style="color:${sc};background:${ALIVE.has(l.status)?sc+'28':'transparent'}">${STATUS_LABEL[l.status]}</span>
+      ${l.serviceType==='narrow'?'':`<span class="pill">${SERVICE_LABEL[l.serviceType]}</span>`}
+      <span class="pill">${gaugeShort(l.gaugeMm)}</span>
+    </div>
+  </div>`;
+}
+
+// ── 화면들 ──
+function homeHtml(){
+  const total=LOCOS.length, ctry=new Set(LOCOS.map(l=>l.countryCode)).size;
+  const alive=LOCOS.filter(l=>ALIVE.has(l.status)).length;
+  const ver=LOCOS.filter(l=>l.verified).length;
+  const iconic=query({iconicOnly:true,countries:new Set(),eras:new Set(),services:new Set(),
+    statuses:new Set(),aliveOnly:false,text:'',sort:'year',desc:false}).slice(0,12);
+  return `
+  <h2 class="t">Steam Atlas</h2>
+  <p class="lead">1804년 첫 주행부터 2022년 마지막 정기 화물까지,<br>세계를 달린 증기기관차 ${total}량.</p>
+  <div class="stats">
+    <div class="stat"><i>수록</i><b style="color:var(--brass)">${total}</b><u> 량</u></div>
+    <div class="stat"><i>국가</i><b>${ctry}</b><u> 개국</u></div>
+    <div class="stat"><i>아직 달림</i><b style="color:var(--live)">${alive}</b><u> 량</u></div>
+  </div>
+  <div class="sec"><h3>대표 명차</h3><span>먼저 보면 좋을 ${iconic.length}량</span></div>
+  <div class="rail">${iconic.map(cardHtml).join('')}</div>
+  <div class="sec"><h3>시대로 들어가기</h3><span>증기 200년을 6구간으로</span></div>
+  <div class="pad">${ERAS.map(e=>{
+    const n=LOCOS.filter(l=>l.era===e.id).length;
+    const rg=e.to>=2100?`${e.from}~현재`:`${e.from}–${e.to}`;
+    return `<div class="erarow" data-era="${e.id}">
+      <div class="yr">${rg}</div>
+      <div style="flex:1"><div class="nm">${e.ko}</div><div class="no">${esc(e.note)}</div></div>
+      <div class="ct">${n}</div></div>`;}).join('')}</div>
+  <p class="lead" style="margin-top:26px;font-size:11.5px;color:var(--dim)">
+    데이터 ${total}량 중 ${ver}량은 출처 확인을 마쳤습니다. 나머지는 상세 화면에 "수치 확인 필요"로 표시됩니다.</p>
+  <div style="height:24px"></div>`;
+}
+
+function filterChips(){
+  const rows=[
+    ['대표 명차만','iconicOnly',state.iconicOnly],
+    ['지금 움직이는 것만','aliveOnly',state.aliveOnly],
+  ];
+  let h='<div class="chips">';
+  rows.forEach(([lb,k,on])=>h+=`<button class="chip ${on?'on':''}" data-tog="${k}">${lb}</button>`);
+  ERAS.forEach(e=>h+=`<button class="chip ${state.eras.has(e.id)?'on':''}" data-era-f="${e.id}">${e.ko}</button>`);
+  Object.entries(SERVICE_LABEL).forEach(([k,v])=>h+=`<button class="chip ${state.services.has(k)?'on':''}" data-svc="${k}">${v}</button>`);
+  h+='</div><div class="chips">';
+  COUNTRIES.forEach(c=>h+=`<button class="chip ${state.countries.has(c.code)?'on':''}" data-ctry="${c.code}">${flagImg(c.code,'sm')} ${c.nameKo}</button>`);
+  // 도색 계열(견본색 점 + 량 수) · 생김새 — 데이터에 실제로 쓰인 것만 (v0.12)
+  h+='</div><div class="chips">';
+  LIVERY_FAMILIES.forEach(([k,ko,sw])=>{ const n=LOCOS.filter(l=>liveryOf(l)?.family===k).length; if(!n) return;
+    h+=`<button class="chip ${state.liveryFams.has(k)?'on':''}" data-lvf="${k}" title="${ko} 계열 도색 ${n}량"><i class="dot" style="background:${sw}"></i>${ko}<span class="n">${n}</span></button>`; });
+  h+='</div><div class="chips">';
+  Object.values(SHAPES).forEach(sp=>{ const n=LOCOS.filter(l=>shapeOf(l).id===sp.id).length; if(!n) return;
+    h+=`<button class="chip ${state.shapes.has(sp.id)?'on':''}" data-shp="${sp.id}" title="${esc(sp.note||'')}">${esc(sp.nameKo)}<span class="n">${n}</span></button>`; });
+  h+='</div><div class="chips">';
+  Object.entries(SORTS).forEach(([k,v])=>h+=`<button class="chip ${state.sort===k?'on':''}" data-sort="${k}">${v}</button>`);
+  h+=`<button class="chip ${state.desc?'on':''}" data-desc="1">${state.desc?'내림차순 ↓':'오름차순 ↑'}</button>`;
+  return h+'</div>';
+}
+
+// 검색 결과 부분만 따로 뽑아 둔다. 글자를 칠 때는 이 부분만 갈아끼우고 <input> 은 그대로 둔다 —
+// 입력창을 매 키마다 새로 만들면 한글 조합(IME)이 끊겨 글자가 깨진다.
+function exploreResultsHtml(){
+  const r=query();
+  return `${filterChips()}
+  <div class="meta"><b>${r.length}량</b><span>${SORTS[state.sort]} ${state.desc?'↓':'↑'}</span>
+    ${activeCount()?'<button data-reset="1">필터 해제</button>':''}</div>
+  <div class="pad">${r.length?r.map(cardHtml).join(''):'<div class="empty">조건에 맞는 기관차가 없습니다</div>'}</div>
+  <div style="height:16px"></div>`;
+}
+function exploreHtml(){
+  return `<div class="searchbar">
+    <input id="q" placeholder="이름 · 형식 · 차륜배치(4-6-2) · 제조사" value="${esc(state.text)}" autocomplete="off">
+    <button class="fbtn">${iconTune()}<span class="badge" ${activeCount()?'':'hidden'}>${activeCount()}</span></button>
+  </div>
+  <div id="qres">${exploreResultsHtml()}</div>${comparePillHtml()}`;
+}
+
+// ── 비교 (v0.12) ──
+// 앱의 AppState.toggleCompare 와 같은 규칙: 최대 2량, 셋째를 넣으면 먼저 넣은 것이 빠진다.
+function compareIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4"/></svg>`;}
+function toggleCompare(id){
+  const i=state.compare.indexOf(id); let added;
+  if(i>=0){ state.compare.splice(i,1); added=false; }
+  else { if(state.compare.length>=2) state.compare.shift(); state.compare.push(id); added=true; }
+  const n=state.compare.length;
+  showToast(added?`비교에 넣었습니다 (${n}/2)`:`비교에서 뺐습니다 (${n}/2)`, n===2?`<button data-cmpopen="1">비교 보기</button>`:'');
+}
+// 스낵바 흉내 — 화면을 다시 그려도 남도록 .phone 에 직접 붙이고 3초 뒤 지운다.
+function showToast(msg, actionHtml=''){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div'); t.className='toast';
+  t.innerHTML=`<span>${esc(msg)}</span>${actionHtml}`;
+  document.querySelector('.phone').appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+function comparePillHtml(){
+  const n=state.compare.length; if(!n) return '';
+  const ready=n>=2;
+  return `<div class="cmppillwrap"><button class="cmppill ${ready?'on':''}" data-cmpopen="1" title="${ready?'두 량 제원 대조':'상세 화면의 ⇄ 버튼으로 한 량 더 넣으세요'}">${compareIcon()}<span>${ready?'비교 보기 (2)':`비교 ${n}/2 — 상세에서 한 량 더`}</span><span class="x" data-cmpclear="1" title="비우기">×</span></button></div>`;
+}
+// 행 하나: 두 값이 모두 있을 때만 큰 쪽(lower 면 작은 쪽)을 굵게. 중량은 기준이 같을 때만.
+function compareRows(a,b){
+  const sa=a.specs, sb=b.specs;
+  const num=(label,x,y,fmt,opt={})=>{
+    let ba=false,bb=false;
+    if(x!=null&&y!=null&&x!==y){ const aw=opt.lower?x<y:x>y; ba=aw; bb=!aw; }
+    return {label,a:fmt(x),b:fmt(y),ba,bb,note:opt.note};
+  };
+  const row=(label,x,y,note)=>({label,a:x,b:y,ba:false,bb:false,note});
+  const WB={loco:'기관차 단독',locoAndTender:'기관차+탄수차'};
+  const same=!!sa.weightBasis&&sa.weightBasis===sb.weightBasis;
+  const w=s=>s.weightT==null?dash:`${fW(s.weightT)}${s.weightBasis?` (${WB[s.weightBasis]})`:''}`;
+  const weight=same?num(`중량 (${WB[sa.weightBasis]})`,sa.weightT,sb.weightT,fW)
+    :row('중량',w(sa),w(sb),(sa.weightT!=null&&sb.weightT!=null)?'중량 기준이 달라 직접 비교하지 않습니다':undefined);
+  const cnt=v=>v==null?dash:`${nf(v)} 량`;
+  return [
+    row('형식',a.classDesignation,b.classDesignation),
+    row('차륜 배치',a.wheel.whyte,b.wheel.whyte),
+    row('용도',SERVICE_LABEL[a.serviceType],SERVICE_LABEL[b.serviceType]),
+    row('궤간',gaugeName(a.gaugeMm),gaugeName(b.gaugeMm)),
+    row('제작',builtLabel(a),builtLabel(b)),
+    num('생산량',a.quantityBuilt,b.quantityBuilt,cnt),
+    num('현존',a.survivors,b.survivors,cnt),
+    row('상태',STATUS_LABEL[a.status],STATUS_LABEL[b.status]),
+    num('최고속도',sa.topSpeedKmh,sb.topSpeedKmh,fSpeed),
+    num('견인력',sa.tractiveEffortKn,sb.tractiveEffortKn,fTe),
+    num('출력',sa.powerKw,sb.powerKw,fPow),
+    weight,
+    num('동륜 직경',sa.driverDiameterMm,sb.driverDiameterMm,fMm),
+    num('보일러 압력',sa.boilerPressureBar,sb.boilerPressureBar,fBar),
+    row('실린더',sa.cylinders==null?dash:`${sa.cylinders}기통`,sb.cylinders==null?dash:`${sb.cylinders}기통`),
+    num('전장',sa.lengthMm,sb.lengthMm,fMm),
+  ];
+}
+function compareHtml(){
+  const locos=state.compare.map(id=>LOCOS.find(l=>l.id===id)).filter(Boolean);
+  const head=l=>`<div class="cmphead" data-id="${l.id}">
+      <span class="plate">${whyteSvg(l.wheel.whyte,22,'currentColor',tenderAxlesOf(l),liveryOf(l),shapeOf(l))}</span>
+      <div class="nm">${flagImg(l.countryCode,'sm')}<b>${esc(l.nameKo)}</b></div>
+      <div class="en">${esc(l.nameEn)}</div>
+      ${l.verified?'':'<div class="need">수치 확인 필요</div>'}
+    </div>`;
+  let body;
+  if(locos.length<2){
+    body=`<div class="cmpempty">${compareIcon()}<b>${locos.length?'한 량 더 고르세요 (지금 1량)':'비교할 기관차를 2량 고르세요'}</b>
+      <span>상세 화면 오른쪽 위의 비교 버튼(⇄)으로 넣고 뺍니다. 셋째를 넣으면 먼저 넣은 것이 빠집니다.</span></div>`;
+  } else {
+    const [a,b]=locos;
+    body=`<div class="cmpheads">${head(a)}${head(b)}</div>
+      <div class="cmptable">${compareRows(a,b).map(r=>`<div class="cmprow"><i>${esc(r.label)}</i>
+        <div class="vals"><span class="${r.ba?'win':''}${r.a===dash?' na':''}">${esc(r.a)}</span><span class="${r.bb?'win':''}${r.b===dash?' na':''}">${esc(r.b)}</span></div>
+        ${r.note?`<em>${esc(r.note)}</em>`:''}</div>`).join('')}</div>
+      <div class="lochint">굵은 값이 큰 쪽입니다. 값이 없는(—) 항목과 기준이 다른 중량은 비교하지 않습니다. "수치 확인 필요" 표시가 있는 기관차의 값은 출처 대조가 끝나지 않은 것입니다. 이름을 누르면 상세로 갑니다.</div>`;
+  }
+  return `<div class="sheet cmp">
+    <div class="top"><button data-cmpclose="1">←</button><b class="ttl">비교</b><span style="flex:1"></span>
+      ${locos.length?`<button class="txt" data-cmpclear="1">비우기</button>`:''}</div>
+    <div class="bd" data-sheet="__compare">${body}<div style="height:30px"></div></div></div>`;
+}
+
+function timelineHtml(){
+  const items=query({sort:'year',desc:false});
+  let h='';
+  ERAS.forEach(e=>{
+    const g=items.filter(l=>l.era===e.id);
+    if(!g.length) return;
+    const rg=e.to>=2100?`${e.from}~현재`:`${e.from}–${e.to}`;
+    h+=`<div class="erahead"><div class="rg">${rg}</div><h4>${e.ko}</h4><p>${esc(e.note)}</p>
+      <p style="margin-top:6px;font-size:11.5px;color:var(--dim)">${g.length}량</p></div>`;
+    g.forEach((l,i)=>{
+      const c=CBY[l.countryCode]||{flag:''};
+      h+=`<div class="tl" data-id="${l.id}">
+        <div class="yr">${l.builtFrom??''}</div>
+        <div class="axis"><div class="up" style="${i===0?'background:transparent':''}"></div>
+          <div class="dot" style="background:${STATUS_COLOR[l.status]}"></div>
+          <div class="dn" style="${i===g.length-1?'background:transparent':''}"></div></div>
+        <div class="body">
+          <div class="tnm">${flagImg(l.countryCode,'sm')} ${esc(l.nameKo)}${l.iconic?'<span class="star">★</span>':''}</div>
+          <div class="tsub"><span class="tlsvg plate">${whyteSvg(l.wheel.whyte,24,'currentColor',tenderAxlesOf(l),liveryOf(l),shapeOf(l))}</span><span>${l.wheel.whyte} · ${esc(l.classDesignation)}</span></div>
+          ${l.highlights.length?`<div class="thl">· ${esc(l.highlights[0])}</div>`:''}
+        </div></div>`;
+    });
+  });
+  if(!h) h='<div class="empty">조건에 맞는 기관차가 없습니다</div>';
+  return `<h2 class="t">연표</h2>${filterChips()}${h}<div style="height:24px"></div>`;
+}
+
+// ── 세계지도 ──
+// 웹 메르카토르 정사각형(경도 ±180°, 위도 ±85.05°)을 통째로 그린다.
+// (실제 앱은 flutter_map 8 — 같은 데이터를 오프라인 밑그림으로 재사용한다)
+//
+// 상하: 확대 전(z=1)에는 세계가 칸 높이를 꽉 채우고, 어느 배율에서도 위아래 끝 밖으로는 못 나간다.
+//       앱의 `CameraConstraint.containLatitude()` 와 같은 규칙.
+// 좌우: 세계를 3벌(-1·0·+1) 이어 붙이고 tx 를 '세계 한 벌의 폭'으로 나머지 연산해서
+//       어느 쪽으로 끌어도 끝없이 도는 순환 구조. 앱의 flutter_map 8 멀티 월드와 같다.
+//       땅·격자는 <use> 로 복제하고(경로 데이터 1벌), 마커는 클릭을 받아야 하므로 3벌 다 찍는다.
+//
+// 주의: 메르카토르 y 는 라디안 단위로 나오므로 경도(도)와 축척이 맞지 않는다.
+//       180/π 를 곱해 '도 환산' 으로 맞춰야 가로세로 비율이 안 깨진다.
+//       그러면 ±85.0511° 가 정확히 ±180 이 되어 세계가 360×360 정사각형이 된다.
+const MERC_MAX_LAT=85.0511;
+const MERC = lat => -(180/Math.PI) *
+  Math.log(Math.tan(Math.PI/4 + Math.max(-MERC_MAX_LAT,Math.min(MERC_MAX_LAT,lat))*Math.PI/360));
+
+const MAP_W=390;        // viewBox 가로 = 폰 폭
+const MAP_HOME_LON=127.5; // 첫 화면의 중심 경도 — 한국이 가운데 오도록 (앱과 같은 값)
+const mapH=()=>state.mapH||624;
+
+// 세계 한 벌의 좌표계 (z=1, tx=ty=0 기준). 세로가 칸 높이 H 에 꼭 맞고 가로 한 벌은 Ww(=H).
+function mapProjection(){
+  const W=MAP_W, H=mapH();
+  const s=H/360;            // 도 환산 1° 당 viewBox 단위
+  const Ww=360*s;           // 세계 한 벌의 가로 폭
+  const ox=(W-Ww)/2;        // tx=0 일 때 0번 세계가 가운데 오는 x 오프셋
+  return {
+    W,H,s,Ww,ox,
+    px: lon => ox+(lon+180)*s,
+    py: lat => (MERC(lat)+180)*s,   // 85.05°N → 0, 85.05°S → H
+    key:'world_'+H,
+  };
+}
+
+let _landCache={};
+function landPaths(P){
+  if(_landCache[P.key]) return _landCache[P.key];
+  const {px,py}=P;
+  const parts=[];
+  for(const c of WORLD.countries){
+    const d=[];
+    for(const r of c.rings){
+      const seg=[];
+      for(let i=0;i<r.length;i+=2) seg.push(px(r[i]).toFixed(1)+' '+py(r[i+1]).toFixed(1));
+      d.push('M'+seg.join(' ')+'Z');
+    }
+    parts.push(`<path d="${d.join('')}" fill="var(--land)" stroke="var(--coast)"
+      vector-effect="non-scaling-stroke" stroke-width=".7" stroke-linejoin="round"
+      ><title>${esc(c.name)}</title></path>`);
+  }
+  return (_landCache[P.key]=parts.join(''));
+}
+
+// 가로 순환: tx 를 [0, z·Ww) 로 접는다. 세계 한 벌 폭만큼 옮겨도 그림은 같으므로 눈에는 안 띈다.
+const normTx=(tx,z,Ww)=>{ const p=z*Ww; return ((tx%p)+p)%p; };
+
+// 첫 화면: z=1, 중심 경도 MAP_HOME_LON. (화면 중심에 경도 L 을 두려면 z=1 에서 tx=-L·s)
+function mapHome(P){ return {z:1, tx:normTx(-MAP_HOME_LON*P.s,1,P.Ww), ty:0}; }
+function mapView(P){ if(!state.map) state.map=mapHome(P); return state.map; }
+
+function clampPan(P){
+  const m=state.map;
+  m.tx=normTx(m.tx,m.z,P.Ww);                      // 좌우: 끝없이 순환
+  m.ty=Math.min(0,Math.max(P.H-m.z*P.H, m.ty));    // 상하: 세계의 위아래 끝이 칸 밖으로 못 들어옴 (z=1 이면 0 고정)
+}
+
+// ── 마커 클러스터링 (v0.12) ──
+// 앱의 core/marker_cluster.dart 와 같은 규칙: 탐욕적·결정적, 화면 픽셀 거리로 묶고, x 는 세계 폭을 법으로 잰다.
+// 여기서는 세계 좌표(z=1)에서 묶되 반지름을 z 로 나눈다 — 화면 거리 = 세계 거리 × z 이므로 같은 결과.
+const CLUSTER_R=22;   // 화면 px(viewBox 단위 ≈ px). 마커 지름 9.2 + 여유. 앱은 핀이 커서 28.
+const MAP_MAX_Z=60;   // 최대 배율 — 같은 도시의 보존 시설(의왕↔서울, 실던↔달링턴)이 갈라질 만큼. 110m 해안선은 이쯤이면 각져 보이지만 프리뷰라 감수.
+function clusterPoints(items, at, radius, worldW){
+  const pts=items.map(item=>({item,p:at(item)})).sort((a,b)=>a.p.y-b.p.y||a.p.x-b.p.x);
+  const dx=(from,to)=>{ let d=to-from; if(worldW>0) d=((d+worldW/2)%worldW+worldW)%worldW-worldW/2; return d; };
+  const taken=new Array(pts.length).fill(false), out=[], r2=radius*radius;
+  for(let i=0;i<pts.length;i++){
+    if(taken[i]) continue; taken[i]=true;
+    const seed=pts[i].p, members=[pts[i].item]; let sx=0, sy=seed.y;
+    for(let j=i+1;j<pts.length;j++){
+      if(taken[j]) continue;
+      const ddx=dx(seed.x,pts[j].p.x), ddy=pts[j].p.y-seed.y;
+      if(ddy>radius) break;                      // y 정렬이라 이 뒤는 전부 멀다
+      if(ddx*ddx+ddy*ddy<=r2){ taken[j]=true; members.push(pts[j].item); sx+=ddx; sy+=pts[j].p.y; }
+    }
+    let cx=seed.x+sx/members.length; if(worldW>0) cx=(cx%worldW+worldW)%worldW;
+    // 구성원이 퍼진 폭(세계 단위) — 누르면 어디까지 확대할지 정하는 데 쓴다
+    let mn=Infinity,mx=-Infinity,mny=Infinity,mxy=-Infinity;
+    members.forEach(m=>{ const q=at(m); const d=dx(cx,q.x); mn=Math.min(mn,d); mx=Math.max(mx,d); mny=Math.min(mny,q.y); mxy=Math.max(mxy,q.y); });
+    out.push({members,x:cx,y:sy/members.length,spread:Math.max(mx-mn,mxy-mny)});
+  }
+  return out;
+}
+// 구성원이 전부 같은 상태면 그 상태색, 섞여 있으면 중립색(테마 전경색).
+function clusterColor(members){
+  const st=members[0].status;
+  return members.every(l=>l.status===st) ? {fill:STATUS_COLOR[st],text:'#fff'} : {fill:'var(--steam)',text:'var(--coal)'};
+}
+// 묶음을 누르면 그 자리로 확대 — 구성원이 화면의 60% 안에 들어오는 배율, 최소 ×2, 최대 14. 한 점에 겹친 것은 ×8.
+function mapZoomToCluster(cx,cy,spread,ids){
+  const P=mapProjection(); const m=mapView(P);
+  // 화면에서 4px 도 안 벌어지는 묶음은 같은 시설(같은 좌표)이다 — 아무리 확대해도 안 풀리니 목록으로 고른다.
+  // 이미 최대 배율이어도 마찬가지 (더 확대할 수 없으니 목록이 유일한 출구).
+  if(spread*m.z<=4 || m.z>=MAP_MAX_Z-1e-9){ state.mapPick=ids.split(','); state.mapSel=null; return; }
+  const room=0.6*Math.min(P.W,P.H);
+  const wanted = spread*m.z>1 ? room/spread : m.z*8;
+  const z2=Math.min(MAP_MAX_Z, Math.max(m.z*2, wanted));
+  m.z=z2; m.tx=P.W/2-z2*cx; m.ty=P.H/2-z2*cy;
+  clampPan(P);
+}
+
+function mapHtml(){
+  const items=query().filter(l=>l.location);
+  const P=mapProjection();
+  const {W,H,px,py,Ww}=P;
+  const m=mapView(P); clampPan(P);
+  const z=m.z, tx=m.tx, ty=m.ty;
+
+  // 위경도선 — 경도 30° 마다, 위도 30° 마다 (세계 한 벌 안에서만; 복제는 <use> 가 맡는다)
+  let grid='';
+  for(let lon=-180;lon<180;lon+=30)
+    grid+=`<line x1="${px(lon).toFixed(1)}" y1="0" x2="${px(lon).toFixed(1)}" y2="${H.toFixed(1)}"
+      stroke="var(--coast)" stroke-opacity=".3" vector-effect="non-scaling-stroke" stroke-width=".6"/>`;
+  for(let lat=-60;lat<=60;lat+=30)
+    grid+=`<line x1="${px(-180).toFixed(1)}" y1="${py(lat).toFixed(1)}" x2="${px(180).toFixed(1)}" y2="${py(lat).toFixed(1)}"
+      stroke="var(--coast)" stroke-opacity=".3" vector-effect="non-scaling-stroke" stroke-width=".6"/>`;
+
+  // 마커 — 확대해도 크기가 일정하도록 반지름을 배율로 나눈다. 세계 3벌에 모두 찍는다(클릭 대상).
+  // 가까운 것끼리는 숫자 하나로 묶는다(클러스터링). 선택된 량은 묶지 않고 맨 위에 낱개로.
+  const mark=(l,sel,k)=>`<circle class="mk" data-id="${l.id}" cx="${(px(l.location.lon)+k*Ww).toFixed(1)}"
+      cy="${py(l.location.lat).toFixed(1)}" r="${((sel?7:4.6)/z).toFixed(2)}"
+      fill="${STATUS_COLOR[l.status]}" stroke="#fff" stroke-opacity="${sel?.95:.65}"
+      vector-effect="non-scaling-stroke" stroke-width="${sel?2:1}" style="cursor:pointer"
+      ><title>${esc(l.nameKo)} — ${esc(l.location.name)}</title></circle>`;
+  const selLoco=items.find(l=>l.id===state.mapSel);
+  const clusters=clusterPoints(items.filter(l=>l!==selLoco), l=>({x:px(l.location.lon),y:py(l.location.lat)}), CLUSTER_R/z, Ww);
+  let marks='';
+  for(const k of [-1,0,1]){
+    clusters.forEach(c=>{
+      if(c.members.length===1){ marks+=mark(c.members[0],false,k); return; }
+      const col=clusterColor(c.members), n=c.members.length, r=(n>=10?12:10.5)/z;
+      marks+=`<g class="ck" data-cl="${c.x.toFixed(2)},${c.y.toFixed(2)},${c.spread.toFixed(3)}" data-ids="${c.members.map(l=>l.id).join(',')}" style="cursor:pointer">
+        <circle cx="${(c.x+k*Ww).toFixed(1)}" cy="${c.y.toFixed(1)}" r="${r.toFixed(2)}" fill="${col.fill}"
+          stroke="#fff" stroke-opacity=".8" vector-effect="non-scaling-stroke" stroke-width="2"/>
+        <text x="${(c.x+k*Ww).toFixed(1)}" y="${c.y.toFixed(1)}" font-size="${(n>=10?10.5:11)/z}" font-weight="800"
+          fill="${col.text}" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">${n}</text>
+        <title>${n}량이 겹쳐 있습니다 — 누르면 ${(c.spread*z<=4||z>=MAP_MAX_Z-1e-9)?'목록':'확대'}: ${c.members.map(l=>esc(l.nameKo)).join(', ')}</title></g>`;
+    });
+    if(selLoco) marks+=mark(selLoco,true,k);
+  }
+
+  const sel=items.find(l=>l.id===state.mapSel);
+  const pick=state.mapPick?state.mapPick.map(id=>LOCOS.find(l=>l.id===id)).filter(Boolean):null;
+  const pickHtml=pick&&pick.length?`<div class="mapsel mappick">
+      <div class="ph"><b>같은 자리에 ${pick.length}량</b><span>${esc(pick[0].location.name)}</span><button data-pickclose="1" title="닫기">×</button></div>
+      ${pick.map(l=>`<button class="pr" data-pick="${l.id}"><s style="background:${STATUS_COLOR[l.status]}"></s>${flagImg(l.countryCode,'sm')}<b>${esc(l.nameKo)}</b><i>${esc(l.classDesignation)}</i></button>`).join('')}
+    </div>`:'';
+  const lift=sel?210:(pick&&pick.length?(58+34*pick.length):0);
+  return `<div class="maparea">
+    <div class="maptop">
+      <span class="mapcount">보존 위치 ${items.length}곳</span>
+      <span class="maphint">숫자는 겹친 마커 — 누르면 확대 · 좌우로 끝없이 이어짐</span>
+    </div>
+    <div class="mapwrap">
+      <svg id="mapsvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+        <rect x="-4000" y="-4000" width="10000" height="10000" fill="var(--sea)"/>
+        <g id="mapg" transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)}) scale(${z})">
+          <g id="world">${landPaths(P)}${grid}</g>
+          <use href="#world" x="${(-Ww).toFixed(1)}"/>
+          <use href="#world" x="${Ww.toFixed(1)}"/>
+          ${marks}
+        </g>
+      </svg>
+      <div class="mapzoom">
+        <button data-zoom="in">＋</button>
+        <button data-zoom="out">－</button>
+        <button data-zoom="reset" title="처음 화면">⤢</button>
+      </div>
+      <div class="legend" style="${lift?`bottom:${lift}px`:''}">
+        ${['operational','operable','static','restoration','replica'].map(s=>
+          `<div><s style="background:${STATUS_COLOR[s]}"></s>${STATUS_LABEL[s]}</div>`).join('')}
+      </div>
+      <div class="mapattr" style="${lift?`bottom:${lift+6}px`:''}">© Natural Earth · 앱에서는 OpenStreetMap 타일</div>
+      ${sel?`<div class="mapsel">${cardHtml(sel)}</div>`:pickHtml}
+    </div>
+  </div>`;
+}
+
+// 지도 확대/축소 — 화면 중앙을 기준으로 유지
+function mapZoom(dir){
+  const P=mapProjection();
+  const m=mapView(P);
+  if(dir==='reset'){ state.map=mapHome(P); return; }
+  const z2=Math.max(1,Math.min(MAP_MAX_Z, dir==='in' ? m.z*1.6 : m.z/1.6));
+  m.tx = P.W/2 - z2*((P.W/2-m.tx)/m.z);
+  m.ty = P.H/2 - z2*((P.H/2-m.ty)/m.z);
+  m.z = z2;
+  clampPan(P);
+}
+
+// 드래그 이동 — 재렌더 없이 <g> transform 만 갱신해서 부드럽게.
+// setPointerCapture 는 이후 click 의 target 을 svg 로 바꿔서 마커 선택을 먹어버리므로 쓰지 않는다.
+function attachMapDrag(){
+  const svg=document.getElementById('mapsvg');
+  const g=document.getElementById('mapg');
+  if(!svg||!g||svg._bound) return;
+  svg._bound=true;
+
+  // viewBox 세로를 지도 칸의 실제 높이에 맞춘다 (처음 한 번만 재렌더).
+  // 안 맞추면 'meet' 여백만큼 위아래 끝 제한이 화면과 어긋난다.
+  const r=svg.parentElement.getBoundingClientRect();
+  const H2=Math.round(r.height*MAP_W/r.width);
+  if(r.width>0 && Math.abs(H2-mapH())>2){ state.mapH=H2; state.map=null; render(); return; }
+
+  const P=mapProjection();
+  let dragging=false,sx=0,sy=0,ox=0,oy=0,scale=1;
+
+  const apply=()=>g.setAttribute('transform',
+    `translate(${state.map.tx.toFixed(1)} ${state.map.ty.toFixed(1)}) scale(${state.map.z})`);
+
+  const onMove=e=>{
+    if(!dragging) return;
+    const dx=(e.clientX-sx)/scale, dy=(e.clientY-sy)/scale;
+    if(Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)>4) svg._dragged=true;
+    state.map.tx=ox+dx; state.map.ty=oy+dy;
+    clampPan(P); apply();
+  };
+  const onUp=()=>{
+    dragging=false;
+    window.removeEventListener('pointermove',onMove);
+    window.removeEventListener('pointerup',onUp);
+  };
+
+  svg.addEventListener('pointerdown',e=>{
+    dragging=true;
+    svg._dragged=false;                              // 새 제스처 시작 — 클릭 허용 상태로
+    scale=svg.getBoundingClientRect().width/P.W;     // 화면 px → viewBox 단위
+    sx=e.clientX; sy=e.clientY; ox=state.map.tx; oy=state.map.ty;
+    window.addEventListener('pointermove',onMove);
+    window.addEventListener('pointerup',onUp);
+  });
+
+  // 휠 확대 — 커서 위치를 기준으로
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const rc=svg.getBoundingClientRect();
+    const k=rc.width/P.W;
+    const cx=(e.clientX-rc.left)/k, cy=(e.clientY-rc.top)/k;
+    const m=state.map;
+    const z2=Math.max(1,Math.min(MAP_MAX_Z, m.z*(e.deltaY<0?1.15:1/1.15)));
+    m.tx=cx-z2*((cx-m.tx)/m.z);
+    m.ty=cy-z2*((cy-m.ty)/m.z);
+    m.z=z2; clampPan(P); apply();
+    svg.querySelectorAll('circle.mk').forEach(c=>{
+      const sel=c.getAttribute('data-id')===state.mapSel;
+      c.setAttribute('r',((sel?7:4.6)/m.z).toFixed(2));
+    });
+    // 배율이 바뀌면 묶음이 달라진다 — 휠이 멈추고 150ms 뒤에 한 번만 다시 그린다
+    clearTimeout(svg._recluster); svg._recluster=setTimeout(render,150);
+  },{passive:false});
+}
+
+function settingsHtml(){
+  const total=LOCOS.length, ctry=new Set(LOCOS.map(l=>l.countryCode)).size;
+  const alive=LOCOS.filter(l=>ALIVE.has(l.status)).length;
+  const ver=LOCOS.filter(l=>l.verified).length;
+  const pct=(ver/total*100).toFixed(0);
+  const T=[['system','시스템','<circle cx="12" cy="12" r="8"/><path d="M12 4v16"/>'],
+           ['light','라이트','<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4"/>'],
+           ['dark','다크','<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5"/>']];
+  const themeNote = state.theme==='system'
+    ? '기기의 다크모드 설정을 따릅니다.'
+    : `기기 설정과 관계없이 ${state.theme==='dark'?'다크':'라이트'} 테마를 씁니다.`;
+  const favN=state.favorites.size, filtN=activeCount();
+  return `
+  <h2 class="t">설정</h2>
+  <div class="sethead" style="margin-top:18px">화면 테마</div>
+  <div class="seg">${T.map(([k,lb,ic])=>
+    `<button class="${state.theme===k?'on':''}" data-theme="${k}">
+       <svg viewBox="0 0 24 24">${ic}</svg>${lb}</button>`).join('')}</div>
+  <p class="lead" style="margin-top:10px;font-size:12px">${themeNote}</p>
+  <div class="swatches">
+    <div><s style="background:var(--coal)"></s><span>배경</span></div>
+    <div><s style="background:var(--raised)"></s><span>카드</span></div>
+    <div><s style="background:var(--brass)"></s><span>강조</span></div>
+    <div><s style="background:var(--steam)"></s><span>본문</span></div>
+  </div>
+
+  <div class="sethead">저장한 기관차</div>
+  <div class="setrow"><span class="ico">🔖</span>
+    <div style="flex:1"><div class="tt">${favN}량 저장됨</div>
+      <div class="ss">카드의 북마크 아이콘으로 추가/해제합니다.</div></div>
+    <button data-clearfav="1" ${favN?'':'disabled'}>전체 해제</button></div>
+
+  <div class="sethead">지도</div>
+  <div class="setrow"><span class="ico">🗺</span>
+    <div style="flex:1"><div class="tt">온라인 상세 지도 — 꺼짐(기본)</div>
+      <div class="ss">기기에 저장된 지도만 씁니다. 데이터를 쓰지 않고 비행기 모드에서도 동작합니다.
+        켜면 도로·지명까지 보이지만 타일을 내려받습니다.</div></div></div>
+
+  <div class="sethead">필터</div>
+  <div class="setrow"><span class="ico">⚙</span>
+    <div style="flex:1"><div class="tt">${filtN?`${filtN}개 적용 중`:'적용된 필터 없음'}</div>
+      <div class="ss">탐색·연표·지도가 같은 필터를 씁니다.</div></div>
+    <button data-reset="1" ${filtN?'':'disabled'}>초기화</button></div>
+
+  <div class="sethead">데이터</div>
+  <div class="databox">
+    <div style="display:flex">
+      <div style="flex:1"><i style="font-style:normal;font-size:10.5px;color:var(--muted);display:block">수록</i>
+        <b style="font-size:20px;font-weight:800">${total}</b><u style="text-decoration:none;font-size:10.5px;color:var(--muted)"> 량</u></div>
+      <div style="flex:1"><i style="font-style:normal;font-size:10.5px;color:var(--muted);display:block">국가</i>
+        <b style="font-size:20px;font-weight:800">${ctry}</b><u style="text-decoration:none;font-size:10.5px;color:var(--muted)"> 개국</u></div>
+      <div style="flex:1"><i style="font-style:normal;font-size:10.5px;color:var(--muted);display:block">아직 달림</i>
+        <b style="font-size:20px;font-weight:800;color:var(--live)">${alive}</b><u style="text-decoration:none;font-size:10.5px;color:var(--muted)"> 량</u></div>
+    </div>
+    <div style="display:flex;margin-top:16px;font-size:12px;color:var(--muted)">
+      <span>출처 확인 완료</span><span style="margin-left:auto;color:var(--steam);font-weight:700">${ver} / ${total}량</span></div>
+    <div class="bar"><s style="width:${pct}%"></s></div>
+    <p style="margin:10px 0 0;font-size:11.5px;line-height:1.6;color:var(--muted)">
+      증기기관차 제원은 자료마다 값이 다릅니다(측정 조건·개조 시점·단위 환산).
+      교차 확인을 마친 항목만 위 비율에 들어가고, 나머지는 상세 화면에 "수치 확인 필요"로 표시됩니다.</p>
+  </div>
+
+  <div class="sethead">정보</div>
+  <div class="setrow"><span class="ico">🚂</span><div style="flex:1">
+    <div class="tt">Steam Atlas 0.1.0</div><div class="ss">데이터 스키마 v1</div></div></div>
+  <div class="setrow"><span class="ico">🏳</span><div style="flex:1">
+    <div class="tt">국기 이미지</div><div class="ss">flag-icons (MIT License) — 앱에 번들, 오프라인 동작</div></div></div>
+  <div class="setrow"><span class="ico">🌍</span><div style="flex:1">
+    <div class="tt">지도 데이터</div><div class="ss">기본 지도는 Natural Earth 110m (public domain) — 앱에 포함되어 오프라인 동작. 온라인 상세 지도를 켜면 © OpenStreetMap contributors 타일 사용.</div></div></div>
+  <div class="setrow"><span class="ico">ⓘ</span><div style="flex:1">
+    <div class="tt">운행 상태는 계속 바뀝니다</div>
+    <div class="ss">보일러 검사 주기와 복원 일정에 따라 매년 달라집니다. 방문 전에는 해당 철도의 최신 공지를 확인하세요.</div></div></div>
+  <div class="setrow"><span class="ico">⚖</span><div style="flex:1">
+    <div class="tt">라이선스</div>
+    <div class="ss">앱 코드는 MIT, 기관차 데이터·설명문은 CC BY-SA 4.0 (© 2026 이영표). 국기 flag-icons(MIT), 지도 Natural Earth(퍼블릭 도메인)·world-atlas(ISC). 앱에서는 '오픈소스 라이선스' 항목에서 패키지 라이선스 전문을 볼 수 있습니다.</div></div></div>
+  <div style="height:28px"></div>`;
+}
+
+// '지금 있는 곳' 링크 — 앱(lib/core/place_maps.dart)과 같은 규칙.
+// 안드로이드: geo: (브라우저가 시스템 '다음으로 열기' 선택창을 띄운다) / iOS: Apple 지도 / 그 외: 브라우저 Google 지도.
+// 검색어(location.query)가 있으면 시설 이름으로 검색, 없으면 좌표 핀에 라벨.
+function mapHref(loc){
+  const lat=loc.lat, lon=loc.lon, ua=navigator.userAgent;
+  const label=encodeURIComponent(loc.name.replace(/[(),]/g,' ').replace(/\s+/g,' ').trim());
+  const q=loc.query?encodeURIComponent(loc.query):null;
+  if(/Android/i.test(ua)) return q?`geo:${lat},${lon}?q=${q}`:`geo:0,0?q=${lat},${lon}(${label})`;
+  if(/iPhone|iPad|iPod/i.test(ua)) return `maps://?ll=${lat},${lon}&q=${encodeURIComponent(loc.name)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${q||`${lat},${lon}`}`;
+}
+
+// 참고문헌(서적·논문·공식 자료) — 앱의 _ReferenceGroup 과 같은 구성
+const KIND_LABEL={book:'단행본',article:'논문·기사',thesis:'학위논문',official:'공식 자료',catalog:'소장품 기록'};
+function refCitation(r){
+  return [r.author, `『${r.title}』`, r.publisher, r.year==null?'연도 미확인':String(r.year)].filter(Boolean).join(', ');
+}
+// 같은 문헌이 '이 형식' 과 '나라 전반' 양쪽에 있으면 한 번만 보인다 (RCTS 형식사처럼 둘 다에 실리는 책)
+const refKey=r=>`${r.title}|${r.author||''}|${r.year||''}`;
+function refsExcept(refs, already){
+  const seen=new Set((already||[]).map(refKey));
+  return (refs||[]).filter(r=>!seen.has(refKey(r)));
+}
+function refGroupHtml(title, refs, collapsed){
+  if(!refs||!refs.length) return '';
+  const items=refs.map(r=>`<div class="ref">
+      <div class="rh"><span class="pill">${KIND_LABEL[r.kind]||'단행본'}</span><span class="pill">${esc((r.lang||'').toUpperCase())}</span><b>${esc(refCitation(r))}</b></div>
+      ${r.note?`<div class="rn">${esc(r.note)}</div>`:''}
+      <div class="rv">${[r.isbn?`ISBN ${esc(r.isbn)}`:'', `확인: ${esc(r.via||'')}`, r.url?`<a href="${r.url}" target="_blank" rel="noopener">${esc(r.url)}</a>`:''].filter(Boolean).join(' · ')}</div>
+    </div>`).join('');
+  if(collapsed) return `<details class="refs"><summary>${esc(title)} (${refs.length})</summary>${items}</details>`;
+  return `<div class="refs"><div class="rt">${esc(title)}</div>${items}</div>`;
+}
+
+function detailHtml(l){
+  const c=CBY[l.countryCode]||{}, e=EBY[l.era];
+  const sc=STATUS_COLOR[l.status];
+  const specs=[['최고속도',fSpeed(l.specs.topSpeedKmh)],['견인력',fTe(l.specs.tractiveEffortKn)],
+    ['출력',fPow(l.specs.powerKw)],
+    [l.specs.weightBasis?`중량 (${{loco:'기관차 단독',locoAndTender:'기관차+탄수차'}[l.specs.weightBasis]})`:'중량',fW(l.specs.weightT)],
+    ['동륜 직경',fMm(l.specs.driverDiameterMm)],['보일러 압력',fBar(l.specs.boilerPressureBar)],
+    ['실린더',l.specs.cylinders==null?dash:`${l.specs.cylinders}기통`],['전장',fMm(l.specs.lengthMm)]];
+  const lv=liveryOf(l), sp=shapeOf(l);
+  // 견본은 라이트 테마의 원색 — 다크용 값은 배경에 묻히지 않게 밝힌 것이라 '실제 색'이 아니다
+  const ACC_KO={boiler:'보일러',cabTender:'운전실·탄수차',chimney:'굴뚝',wheels:'바퀴'};
+  const swatch=lv?`<em class="sw" style="background:${lv.body};border-color:${lv.line}"></em>${lv.accent?`<em class="sw" style="background:${lv.accent.color};border-color:${lv.line}"></em>`:''}${esc(lv.nameKo)} · ${esc(lv.nameEn)}${lv.accent?`<div class="accnote">${ACC_KO[lv.accent.role]||lv.accent.role}만 둘째 색${lv.accent.note?` — ${esc(lv.accent.note)}`:''}</div>`:''}`:'';
+  const kv=[['차륜 배치',`${l.wheel.whyte}${l.wheel.typeName?` (${l.wheel.typeName})`:''}`],
+    ...(l.wheel.uic?[['UIC 표기',l.wheel.uic]]:[]),
+    ...(lv?[['도색',swatch,true]]:[]),
+    ['제작',builtLabel(l)],['생산량',l.quantityBuilt==null?dash:`${nf(l.quantityBuilt)} 량`],
+    ['퇴역',l.withdrawnYear??dash],['현존',l.survivors==null?dash:`${l.survivors} 량`],
+    ...(l.designer?[['설계',l.designer]]:[]),
+    ...(l.builders.length?[['제조',l.builders.join(', ')]]:[]),
+    ...(l.operators.length?[['운영',l.operators.join(', ')]]:[])];
+  return `<div class="sheet">
+    <div class="top"><button data-close="1">←</button><span style="flex:1"></span>
+      <button class="favbtn top-fav top-cmp ${state.compare.includes(l.id)?'on':''}" data-cmp="${l.id}" title="${state.compare.includes(l.id)?'비교에서 빼기':'비교에 넣기'}">${compareIcon().replace('<svg ','<svg width="18" height="18" ')}${state.compare.length?`<i class="n">${state.compare.length}</i>`:''}</button>
+      <button class="favbtn top-fav ${state.favorites.has(l.id)?'on':''}" data-fav="${l.id}" title="저장">${bookmarkIcon(state.favorites.has(l.id))}</button></div>
+    <div class="bd" data-sheet="${l.id}">
+      <div class="hero"><span class="plate">${whyteSvg(l.wheel.whyte,64,'currentColor',tenderAxlesOf(l),liveryOf(l),shapeOf(l))}</span></div>
+      <div class="diagnote">${[
+        '위 그림은 차륜 배치와 생김새를 요약한 도식입니다',
+        ...(sp.note?[`${sp.nameKo} — ${sp.note}`]:[]),
+        ...(l.tenderAxles==null&&tenderAxlesOf(l)>0?['탄수차는 크기로 추정한 개략 표현입니다']:[]),
+      ].map(esc).join('. ')}.</div>
+      <h3>${esc(l.nameKo)}</h3>
+      <div class="en">${esc(l.nameEn)}</div>
+      ${l.nickname?`<div class="en" style="font-style:normal;margin-top:2px">별명 · ${esc(l.nickname)}</div>`:''}
+      <div class="meta2">${flagImg(l.countryCode)} ${c.nameKo||l.countryCode} · ${esc(l.classDesignation)}${l.roadNumber?` · ${esc(l.roadNumber)}`:''}</div>
+      <div class="pills" style="margin-top:14px">
+        <span class="pill f" style="color:${sc};background:${sc}28">${STATUS_LABEL[l.status]}</span>
+        ${l.serviceType==='narrow'?'':`<span class="pill">${SERVICE_LABEL[l.serviceType]}</span>`}
+        ${e?`<span class="pill">${e.ko} ${e.to>=2100?e.from+'~현재':e.from+'–'+e.to}</span>`:''}
+        <span class="pill">${gaugeName(l.gaugeMm)}</span>
+        ${l.verified?'':'<span class="pill f" style="color:var(--ember);background:#D9663A28">수치 확인 필요</span>'}
+      </div>
+      ${l.summary?`<p class="sum">${esc(l.summary)}</p>`:''}
+      ${l.highlights.length?`<div class="hl">${l.highlights.map(h=>`<div>${esc(h)}</div>`).join('')}</div>`:''}
+      <div class="hd">제원</div>
+      <div class="grid">${specs.map(([k,v])=>
+        `<div class="gcell"><i>${k}</i><b class="${v===dash?'na':''}">${v}</b></div>`).join('')}</div>
+      <div class="hd">이력</div>
+      ${kv.map(([k,v,raw])=>`<div class="kv"><i>${k}</i><span>${raw?v:esc(v)}</span></div>`).join('')}
+      ${l.location?`<div class="hd">지금 있는 곳</div>
+        <a class="loc" href="${mapHref(l.location)}" ${mapHref(l.location).startsWith('http')?'target="_blank" rel="noopener"':''}>
+          <span>📍</span>
+          <div style="flex:1">
+            <div class="nm">${esc(l.location.name)}</div>
+            <div class="co">${l.location.lat.toFixed(3)}, ${l.location.lon.toFixed(3)}
+              <b>· 지도 앱에서 열기</b>${l.location.query?` · 검색어 “${esc(l.location.query)}”`:''}</div>
+          </div>
+          <span class="ext">↗</span>
+        </a>
+        <div class="lochint">안드로이드에서는 시스템 '다음으로 열기' 창에서 지도 앱을 고릅니다(앱도 같은 방식). 검색어가 있는 시설은 이름으로 열리고, 없는 곳은 좌표 핀에 라벨이 붙습니다. 앱에서 길게 누르면 좌표만 복사.
+          <a href="#" data-copyloc="${l.location.lat},${l.location.lon}" style="color:var(--brass);font-weight:600;text-decoration:none">좌표 복사</a></div>`:''}
+      ${l.tags.length?`<div class="hd">태그</div><div class="pills">${l.tags.map(t=>`<span class="pill">#${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="hd">참고문헌</div>
+      <div class="lochint" style="margin:0 0 8px">도서관 목록·출판사·학술 DB 에서 서지를 확인한 것만 실었습니다. 웹 페이지는 아래 "웹 출처"에.</div>
+      ${refGroupHtml('이 형식을 다룬 문헌', l.references, false)}
+      ${refGroupHtml(`${c.nameKo||l.countryCode} 증기기관차 전반`, refsExcept(c.references, l.references), false)}
+      ${refGroupHtml('여러 나라에 걸친 종합서', GENERAL_REFS, true)}
+      <div class="hd">웹 출처</div>
+      ${l.sources.length?l.sources.map(s=>`<div class="src">${esc(s)}</div>`).join('')
+        :'<div class="warn">출처 미확인 — 이 항목의 수치는 교차 검증이 필요합니다.</div>'}
+      <div style="height:30px"></div>
+    </div></div>`;
+}
+
+function iconTune(){return `<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>`;}
+// 탭 인덱스는 여기서만 정의한다 (국가별 탭은 v0.9에서 뺌 — 탐색의 국가 필터와 겹쳤다)
+const TAB={home:0,explore:1,timeline:2,map:3,settings:4};
+const ICONS=[
+  ['홈','<path d="M4 10 12 3l8 7v10a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>'],
+  ['탐색','<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/>'],
+  ['연표','<path d="M4 6h7M4 12h13M4 18h9"/><circle cx="15" cy="6" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'],
+  ['지도','<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>'],
+  ['설정','<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.2A1.6 1.6 0 0 0 7.9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a1.6 1.6 0 0 0-1.5-1H1a2 2 0 1 1 0-4h.2A1.6 1.6 0 0 0 4.6 7.9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 3.6a1.6 1.6 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H23a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z"/>'],
+];
+
+// 화면 전체를 다시 그리는 구조라, 다시 그리기 전에 스크롤 위치를 기억해 뒀다가 되돌린다.
+// (안 그러면 즐겨찾기 하나 눌러도 목록이 맨 위로 튄다)
+let _viewKey='';
+const _scrollMemo={};   // 화면별 세로 스크롤
+
+function render(){
+  const scr=document.getElementById('screen');
+  const prevTop=scr.scrollTop;
+  if(_viewKey) _scrollMemo[_viewKey]=prevTop;
+
+  // 화면이나 국가가 바뀌면 목록은 맨 위에서 시작한다. 그 외 재렌더는 위치를 유지.
+  const key=`${state.tab}:${state.detail?'d':''}`;
+  const sameView=(key===_viewKey);
+  _viewKey=key;
+
+  // 시트(상세·비교)도 같은 시트를 다시 그릴 때는 스크롤 위치를 지킨다 (저장 버튼 하나에 맨 위로 튀지 않게)
+  const sheetMemo={};
+  document.querySelectorAll('.sheet .bd').forEach(b=>{ sheetMemo[b.dataset.sheet]=b.scrollTop; });
+
+  const html=[homeHtml,exploreHtml,timelineHtml,mapHtml,settingsHtml][state.tab]();
+  document.querySelector('.phone').classList.toggle('dark', effectiveTheme()==='dark');
+  // 비교 시트를 먼저 두어 상세가 그 위에 올라온다 — 비교에서 이름을 눌러 상세로 갔다가 ← 로 돌아오는 흐름.
+  const cmp=state.compareOpen?compareHtml():'';
+  const det=state.detail?detailHtml(LOCOS.find(l=>l.id===state.detail)):'';
+  scr.innerHTML=html+cmp+det;
+
+  scr.scrollTop = sameView ? prevTop : (_scrollMemo[key] ?? 0);
+  document.querySelectorAll('.sheet .bd').forEach(b=>{ if(b.dataset.sheet in sheetMemo) b.scrollTop=sheetMemo[b.dataset.sheet]; });
+
+  scr.style.padding='44px 0 0';
+  document.getElementById('nav').innerHTML=ICONS.map(([lb,p],i)=>
+    `<button class="${i===state.tab?'on':''}" data-tab="${i}"><span class="ic"><svg viewBox="0 0 24 24">${p}</svg></span>${lb}</button>`).join('');
+  const q=document.getElementById('q');
+  if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); }
+  if(state.tab===TAB.map) attachMapDrag();
+}
+
+document.addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-tab],[data-zoom],[data-fav],[data-theme],[data-clearfav],[data-id],[data-era],[data-tog],[data-era-f],[data-svc],[data-ctry],[data-sort],[data-desc],[data-reset],[data-close],[data-copyloc],[data-cmp],[data-cmpopen],[data-cmpclose],[data-cmpclear],[data-lvf],[data-shp],[data-cl],[data-pick],[data-pickclose]');
+  if(!t) return;
+  const d=t.dataset;
+  if(d.copyloc!=null){ ev.preventDefault(); try{navigator.clipboard.writeText(d.copyloc);}catch(_){} return; }
+  const svg=document.getElementById('mapsvg');
+  // 지도를 끌던 직후의 클릭만 무시한다. 확대 버튼·탭 전환은 영향을 받으면 안 됨.
+  if((d.id!=null||d.cl!=null) && svg && svg._dragged){ svg._dragged=false; return; }
+  if(d.zoom!=null){ mapZoom(d.zoom); render(); return; }
+  if(d.cl!=null){ const [cx,cy,sp]=d.cl.split(',').map(Number); mapZoomToCluster(cx,cy,sp,d.ids); render(); return; }
+  if(d.pick!=null){ state.mapSel=d.pick; state.mapPick=null; render(); return; }
+  if(d.pickclose!=null){ state.mapPick=null; render(); return; }
+  // 비교 (알약의 × 는 알약 안에 있으므로 먼저 본다)
+  if(d.cmpclear!=null){ state.compare=[]; render(); return; }
+  if(d.cmp!=null){ toggleCompare(d.cmp); render(); return; }
+  if(d.cmpopen!=null){ document.querySelectorAll('.toast').forEach(x=>x.remove()); state.compareOpen=true; state.detail=null; render(); return; }
+  if(d.cmpclose!=null){ state.compareOpen=false; render(); return; }
+  if(d.fav!=null){state.favorites.has(d.fav)?state.favorites.delete(d.fav):state.favorites.add(d.fav);}
+  else if(d.theme!=null){state.theme=d.theme;}
+  else if(d.clearfav!=null){state.favorites.clear();}
+  else if(d.tab!=null){state.tab=+d.tab;state.detail=null;state.compareOpen=false;}
+  else if(d.close!=null){state.detail=null;}
+  else if(d.id!=null){ if(state.tab===TAB.map && t.classList.contains('mk')){ state.mapSel=d.id; state.mapPick=null; } else state.detail=d.id; }
+  else if(d.era!=null){state.eras=new Set([d.era]);state.tab=TAB.timeline;}
+  else if(d.tog!=null){state[d.tog]=!state[d.tog];}
+  else if(d.eraF!=null){state.eras.has(d.eraF)?state.eras.delete(d.eraF):state.eras.add(d.eraF);}
+  else if(d.svc!=null){state.services.has(d.svc)?state.services.delete(d.svc):state.services.add(d.svc);}
+  else if(d.ctry!=null){state.countries.has(d.ctry)?state.countries.delete(d.ctry):state.countries.add(d.ctry);}
+  else if(d.lvf!=null){state.liveryFams.has(d.lvf)?state.liveryFams.delete(d.lvf):state.liveryFams.add(d.lvf);}
+  else if(d.shp!=null){state.shapes.has(d.shp)?state.shapes.delete(d.shp):state.shapes.add(d.shp);}
+  else if(d.sort!=null){state.sort=d.sort;}
+  else if(d.desc!=null){state.desc=!state.desc;}
+  else if(d.reset!=null){state.text='';state.countries.clear();state.eras.clear();
+    state.services.clear();state.statuses.clear();state.liveryFams.clear();state.shapes.clear();state.iconicOnly=false;state.aliveOnly=false;}
+  render();
+});
+// 비교 알약 길게 누르기(600ms) → 비우기. 앱의 onLongPress 와 같다.
+(function(){
+  let timer=null, fired=false;
+  const start=ev=>{ const b=ev.target.closest('.cmppill'); if(!b) return; fired=false;
+    timer=setTimeout(()=>{ fired=true; state.compare=[]; showToast('비교 목록을 비웠습니다'); render(); },600); };
+  const stop=()=>{ if(timer){ clearTimeout(timer); timer=null; } };
+  document.addEventListener('pointerdown',start);
+  document.addEventListener('pointerup',stop); document.addEventListener('pointercancel',stop);
+  document.addEventListener('click',ev=>{ if(fired && ev.target.closest('.cmppill')){ ev.stopImmediatePropagation(); ev.preventDefault(); fired=false; } },true);
+})();
+document.addEventListener('input',ev=>{
+  if(ev.target.id!=='q') return;
+  state.text=ev.target.value;
+  const res=document.getElementById('qres');
+  if(res && state.tab===TAB.explore && !state.detail){
+    // 입력창은 건드리지 않고 결과만 갱신 (IME 조합 유지)
+    res.innerHTML=exploreResultsHtml();
+    const b=document.querySelector('.searchbar .badge');
+    if(b){ b.textContent=activeCount(); b.hidden=!activeCount(); }
+  } else render();
+});
+
+// 사이드 통계
+(function(){
+  const byC={}; LOCOS.forEach(l=>byC[l.countryCode]=(byC[l.countryCode]||0)+1);
+  const rows=Object.entries(byC).sort((a,b)=>b[1]-a[1]);
+  const max=rows[0][1];
+  document.getElementById('statbox').innerHTML=rows.map(([c,n])=>{
+    const ct=CBY[c];
+    return `<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px">
+      <span style="width:104px;flex:0 0 auto;display:flex;align-items:center;gap:7px">${flagImg(c,'sm')}${ct.nameKo}</span>
+      <span class="statbar"><span style="width:${(n/max*100).toFixed(0)}%"></span></span>
+      <span style="width:28px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums">${n}</span></div>`;
+  }).join('');
+})();
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+name: steam_atlas
+description: "Steam Atlas — 전 세계 증기기관차 아카이브"
+publish_to: "none"
+version: 0.1.0+1
+
+# Color.withValues / CardThemeData 를 쓰므로 Flutter 3.32 이상 권장
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # 상태 관리 (가볍고 학습 비용이 낮음)
+  provider: ^6.1.2
+  # 지도 — 오프라인 폴리곤 + (선택) OSM 타일, API 키 불필요.
+  # 8.x 필요: 경도 무한 순환(멀티 월드 — 마커 8.0, 폴리곤 8.1) 과 위도만 제한하는
+  # CameraConstraint.containLatitude (8.2). Flutter 3.27+ / Dart 3.6+.
+  flutter_map: ^8.3.2
+  latlong2: ^0.9.1
+  # 국기 SVG 렌더링 (assets/flags/*.svg, 오프라인)
+  flutter_svg: ^2.0.17
+  # 테마 설정·즐겨찾기 영속화
+  shared_preferences: ^2.3.2
+  # 보존 위치 → 안드로이드 시스템 "다음으로 열기" 선택창 (Intent.createChooser).
+  # 기본 앱이 정해져 있어도 매번 지도 앱을 고를 수 있다.
+  android_intent_plus: ^6.1.0
+  # iOS Apple 지도 / 브라우저 지도 폴백
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/
+    - assets/flags/
+    - assets/map/

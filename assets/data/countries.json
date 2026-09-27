@@ -1,0 +1,709 @@
+{
+  "schemaVersion": 1,
+  "countries": [
+    {
+      "code": "GB",
+      "nameKo": "영국",
+      "nameEn": "United Kingdom",
+      "flag": "🇬🇧",
+      "lat": 54.0,
+      "lon": -2.0,
+      "blurb": "증기기관차가 태어난 나라. 1804년 트레비식의 첫 주행부터 1938년 맬러드의 세계 최고속도까지 모든 이정표가 여기서 시작됐다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Locomotives of the L.N.E.R., Part 2A: Tender Engines — Classes A1 to A10",
+          "author": "RCTS (E. V. Fry 편)",
+          "publisher": "Railway Correspondence and Travel Society",
+          "year": 1978,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "LNER 퍼시픽(A1·A3·A4 포함)의 표준 형식사. 개체별 이력까지 수록.",
+          "via": "steamindex.com RCTS 서지"
+        },
+        {
+          "kind": "book",
+          "title": "The Locomotives of the Great Western Railway, Part 8: Modern Passenger Classes",
+          "author": "RCTS",
+          "publisher": "Railway Correspondence and Travel Society",
+          "year": 1953,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "GWR 4-6-0·4-4-2·4-6-2 — 킹급 포함(2판 1960).",
+          "via": "steamindex.com RCTS 서지"
+        },
+        {
+          "kind": "book",
+          "title": "The British Steam Railway Locomotive 1925–1965",
+          "author": "O. S. Nock",
+          "publisher": "Ian Allan, London",
+          "year": 1966,
+          "lang": "en",
+          "isbn": "0711001251",
+          "url": null,
+          "note": "Ahrons 의 1825~1925 통사를 잇는 표준 통사(1983 재판 ISBN 0711001251).",
+          "via": "Internet Archive 서지(1983판)"
+        },
+        {
+          "kind": "book",
+          "title": "The British Steam Railway Locomotive 1825–1925",
+          "author": "E. L. Ahrons",
+          "publisher": "Locomotive Publishing Co., London",
+          "year": 1927,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "영국 증기기관차 첫 100년의 고전 통사(재판 ISBN 9781851701032).",
+          "via": "AbeBooks/Amazon 서지"
+        }
+      ]
+    },
+    {
+      "code": "US",
+      "nameKo": "미국",
+      "nameEn": "United States",
+      "flag": "🇺🇸",
+      "lat": 39.5,
+      "lon": -98.0,
+      "blurb": "대륙 횡단 규모가 만들어낸 거대 기관차의 나라. 관절식(articulated) 대형기의 극한을 밀어붙였다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "American Steam Locomotives: Design and Development, 1880–1960",
+          "author": "William L. Withuhn",
+          "publisher": "Indiana University Press, Bloomington",
+          "year": 2019,
+          "lang": "en",
+          "isbn": "978-0-253-03933-0",
+          "url": null,
+          "note": "스미스소니언 큐레이터의 미국 증기기관차 설계사 — 대학 출판부 학술서.",
+          "via": "en.wikipedia 'N&W Class J (1941)' 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Guide to North American Steam Locomotives",
+          "author": "George H. Drury",
+          "publisher": "Kalmbach Books, Waukesha",
+          "year": 1993,
+          "lang": "en",
+          "isbn": "9780890242063",
+          "url": null,
+          "note": "북미 철도별 증기기관차 편람(454쪽). 개정 2판 2015(ISBN 9781627002592). 캐나다 포함.",
+          "via": "Internet Archive 서지"
+        },
+        {
+          "kind": "book",
+          "title": "Motive Power of the Union Pacific",
+          "author": "William W. Kratville, Harold E. Ranks",
+          "publisher": "Barnhart Press, Omaha",
+          "year": 1960,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "UP 동력차 전반(300쪽) — 빅보이·FEF 계열의 배경.",
+          "via": "utahrails.net UP 증기 문헌목록"
+        }
+      ]
+    },
+    {
+      "code": "DE",
+      "nameKo": "독일",
+      "nameEn": "Germany",
+      "flag": "🇩🇪",
+      "lat": 51.0,
+      "lon": 10.0,
+      "blurb": "표준화(Einheitsdampflok)와 공학적 완성도. 유선형 고속기와 전시 표준형 대량생산을 동시에 해냈다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Dampflokarchiv, Band 1",
+          "author": "Manfred Weisbrod, Hans Müller, Wolfgang Petznick",
+          "publisher": "transpress VEB Verlag für Verkehrswesen, Berlin",
+          "year": 1976,
+          "lang": "de",
+          "isbn": null,
+          "url": null,
+          "note": "독일 증기기관차 형식 아카이브(전 4권)의 1권 — 급행·여객기.",
+          "via": "de.wikipedia 'DB-Baureihe 10' 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Das große Typenbuch deutscher Lokomotiven",
+          "author": "Manfred Weisbrod, Dieter Bäzold, Horst J. Obermayer",
+          "publisher": "transpress",
+          "year": null,
+          "lang": "de",
+          "isbn": "3-344-70751-5",
+          "url": null,
+          "note": "독일 기관차 형식 편람. 발행연도 미확인.",
+          "via": "de.wikipedia 'DR 18 201' 문헌목록"
+        }
+      ]
+    },
+    {
+      "code": "FR",
+      "nameKo": "프랑스",
+      "nameEn": "France",
+      "flag": "🇫🇷",
+      "lat": 46.5,
+      "lon": 2.5,
+      "blurb": "샤플롱(André Chapelon)의 열역학적 개량으로 '가장 효율적인 증기기관차'를 만들어낸 나라.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "L'Âge d'or de la traction vapeur en France (1900/1950)",
+          "author": "Clive Lamming",
+          "publisher": "Éditions Atlas",
+          "year": 2005,
+          "lang": "fr",
+          "isbn": "2-8302-2144-3",
+          "url": null,
+          "note": "프랑스 증기 황금기 개설 — 231 E 등 노르·PO·PLM 형식 배경.",
+          "via": "fr.wikipedia '231 Nord 3.1111…' 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "La Machine locomotive en France : des origines au milieu du XIXe siècle",
+          "author": "Jacques Payen (avec Bernard Escudié, Jean-Marc Combe)",
+          "publisher": "Presses universitaires de Lyon / Éditions du CNRS, Lyon–Paris",
+          "year": 1988,
+          "lang": "fr",
+          "isbn": "9782729703394",
+          "url": null,
+          "note": "프랑스 초기 증기기관차(19세기 중반까지)의 학술 통사 — 크램프턴 시대의 배경.",
+          "via": "BnF 종합목록(CCFr) 서지 / 출판사 페이지"
+        }
+      ]
+    },
+    {
+      "code": "JP",
+      "nameKo": "일본",
+      "nameEn": "Japan",
+      "flag": "🇯🇵",
+      "lat": 36.5,
+      "lon": 138.0,
+      "blurb": "협궤(1067mm) 제약 안에서 정밀하게 다듬어진 형식들. 지금도 관광열차로 다수가 살아 움직인다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "国鉄蒸気機関車史",
+          "author": "髙木宏之",
+          "publisher": "ネコ・パブリッシング",
+          "year": 2015,
+          "lang": "ja",
+          "isbn": "978-4-7770-5379-7",
+          "url": null,
+          "note": "국철 제식 증기기관차의 설계·표준화 통사. 도면·1차 자료 기반.",
+          "via": "출판사(neko.co.jp) 서지"
+        },
+        {
+          "kind": "book",
+          "title": "機関車の系譜図 1〜4",
+          "author": "臼井茂信",
+          "publisher": "交友社",
+          "year": 1972,
+          "lang": "ja",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000039-I12655624",
+          "note": "일본 증기기관차 형식 계보의 고전(전 4권, 1972~1978).",
+          "via": "NDL 서지(1권 R100000039-I12655624)"
+        },
+        {
+          "kind": "book",
+          "title": "日本国有鉄道蒸気機関車設計図面集",
+          "author": "国鉄SL図面編集委員会 編",
+          "publisher": "原書房",
+          "year": 1976,
+          "lang": "ja",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I000001144266",
+          "note": "국철 증기기관차 설계도면집 — 제원의 1차 자료.",
+          "via": "NDL 서지 R100000002-I000001144266 / CiNii BN06275528"
+        },
+        {
+          "kind": "official",
+          "title": "日本国有鉄道百年史 (全19巻)",
+          "author": "日本国有鉄道",
+          "publisher": "日本国有鉄道",
+          "year": 1969,
+          "lang": "ja",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I000001167808",
+          "note": "국철 공식 백년사(1969~1974 간행, 1997 成山堂 복각).",
+          "via": "NDL 서지 R100000002-I000001167808"
+        },
+        {
+          "kind": "book",
+          "title": "国鉄制式蒸気機関車のプロフィール",
+          "author": "『旅と鉄道』編集部",
+          "publisher": "イカロス出版",
+          "year": 2024,
+          "lang": "ja",
+          "isbn": "9784802214223",
+          "url": null,
+          "note": "9600·8620·C11·D51·C57·C58·C62 등 제식기 형식별 제조사·개조·보존기 해설(144쪽).",
+          "via": "출판사(books.ikaros.jp) 서지"
+        }
+      ]
+    },
+    {
+      "code": "KR",
+      "nameKo": "한국",
+      "nameEn": "Korea",
+      "flag": "🇰🇷",
+      "lat": 36.5,
+      "lon": 127.8,
+      "blurb": "1899년 경인선 모가형으로 시작해 1967년 증기 운행 종료. 미국·일본식 형식명이 한글 음차로 남았다.",
+      "references": [
+        {
+          "kind": "official",
+          "title": "한국철도100년사",
+          "author": "철도청 편",
+          "publisher": "철도청",
+          "year": 1999,
+          "lang": "ko",
+          "isbn": null,
+          "url": null,
+          "note": "1899~1999 한국철도 공식 통사. 기관차 도입·형식 변천의 기본 출전.",
+          "via": "국립국회도서관(NDL) 서지 R100000002-Ia1000015465 / 교보문고"
+        },
+        {
+          "kind": "book",
+          "title": "한국 철도의 역사와 발전 1",
+          "author": "이용상·임병국·정병현·轟博志·윤동희·배은선·최석중·김종만",
+          "publisher": "북갤러리",
+          "year": 2011,
+          "lang": "ko",
+          "isbn": "9788964950234",
+          "url": null,
+          "note": "역사·영향·문화·인물을 다룬 종합 연구서(전 3권 중 1권, 445쪽).",
+          "via": "알라딘 서지"
+        },
+        {
+          "kind": "official",
+          "title": "朝鮮鉄道史 第1巻",
+          "author": "朝鮮総督府鉄道局",
+          "publisher": "朝鮮総督府鉄道局",
+          "year": 1929,
+          "lang": "ja",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I000000763694",
+          "note": "경인선 개통부터 총독부 철도국까지의 공식 사서 — 모가·터우 등 초기 도입 기관차의 1차 사료.",
+          "via": "NDL 서지 R100000002-I000000763694 (디지털 컬렉션 공개)"
+        },
+        {
+          "kind": "book",
+          "title": "朝鮮交通史 (本編·資料編)",
+          "author": "鮮交会 編",
+          "publisher": "鮮交会, 東京",
+          "year": 1986,
+          "lang": "ja",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I000001816992",
+          "note": "구 조선총독부 철도국 직원회(鮮交会)가 정리한 조선 철도 통사·자료집. 미카·파시 등 형식별 배치·제원 자료 포함.",
+          "via": "NDL 서지 R100000002-I000001816992 (청구 DK55-104)"
+        },
+        {
+          "kind": "official",
+          "title": "한국철도차량100년사",
+          "author": "철도차량기술검정단 한국철도차량 100년사 편찬위원회 편",
+          "publisher": "철도차량기술검정단",
+          "year": 1999,
+          "lang": "ko",
+          "isbn": null,
+          "url": "https://ndlsearch.ndl.go.jp/books/R100000002-Ia1000033298",
+          "note": "1899~1999 한국 철도차량 공식 백년사(1582쪽). 1.2장 '증기기관차'가 모가·터우·미카·파시·혀기 등 형식별 이력을 다룬다 (장별 PDF 파일명으로 장 구성 확인, 본문은 미열람).",
+          "via": "NDL 서지 R100000002-Ia1000033298 (청구 DK55-K5)"
+        },
+        {
+          "kind": "thesis",
+          "title": "근대문화유산 경의선장단역증기기관차의 보존에 관한 연구 : 문화유산적 가치와 보존방침을 중심으로",
+          "author": "하은하",
+          "publisher": "경기대학교 전통예술대학원 (석사학위논문)",
+          "year": 2008,
+          "lang": "ko",
+          "isbn": null,
+          "url": "https://dl.nanet.go.kr/SearchDetailView.do?cn=KDMT1200848550",
+          "note": "등록문화재 제78호 장단역 마터2형 기관차의 보존 원칙 연구 — 한국 보존 증기기관차의 문화유산적 접근.",
+          "via": "국회도서관 KDMT1200848550"
+        }
+      ]
+    },
+    {
+      "code": "CN",
+      "nameKo": "중국",
+      "nameEn": "China",
+      "flag": "🇨🇳",
+      "lat": 35.0,
+      "lon": 105.0,
+      "blurb": "세계에서 가장 늦게까지 증기기관차를 신조하고 운행한 나라. 2022년에야 정기 증기 화물이 멈췄다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "中国蒸汽机车世纪集影 (1876–2001)",
+          "author": "严介生 编",
+          "publisher": "中国铁道出版社, 北京",
+          "year": 2001,
+          "lang": "zh",
+          "isbn": "9787113041472",
+          "url": "https://book.douban.com/subject/1434767/",
+          "note": "중국 증기기관차 125년 화보·형식집(288쪽). QJ·JS·SY·JF·KF 포함.",
+          "via": "豆瓣 서지"
+        }
+      ]
+    },
+    {
+      "code": "IN",
+      "nameKo": "인도",
+      "nameEn": "India",
+      "flag": "🇮🇳",
+      "lat": 22.0,
+      "lon": 79.0,
+      "blurb": "광궤 대형기와 산악 협궤가 공존. 세계 최고령 현역 기관차 Fairy Queen이 있다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Indian Locomotives, Part 1: Broad Gauge 1851–1940",
+          "author": "Hugh Hughes",
+          "publisher": "Continental Railway Circle",
+          "year": 1990,
+          "lang": "en",
+          "isbn": "0950346985",
+          "url": null,
+          "note": "인도 광궤 증기기관차 형식사 1부 — 페어리 퀸 등 초기 도입기.",
+          "via": "AbeBooks 서지"
+        },
+        {
+          "kind": "book",
+          "title": "Indian Locomotives, Part 3: Narrow Gauge 1863–1940",
+          "author": "Hugh Hughes",
+          "publisher": "Continental Railway Circle",
+          "year": 1994,
+          "lang": "en",
+          "isbn": "0952165503",
+          "url": null,
+          "note": "협궤 — 다르질링 B형.",
+          "via": "AbeBooks 서지"
+        },
+        {
+          "kind": "book",
+          "title": "Indian Locomotives, Part 4: 1941–1990",
+          "author": "Hugh Hughes",
+          "publisher": "Continental Railway Circle",
+          "year": 1996,
+          "lang": "en",
+          "isbn": "0952165511",
+          "url": null,
+          "note": "전후 표준형 WP·WG.",
+          "via": "AbeBooks 서지"
+        }
+      ]
+    },
+    {
+      "code": "ZA",
+      "nameKo": "남아프리카",
+      "nameEn": "South Africa",
+      "flag": "🇿🇦",
+      "lat": -29.0,
+      "lon": 24.5,
+      "blurb": "케이프 궤간(1067mm)에서 가라트(Garratt) 관절식이 가장 발달한 나라. 증기 개량의 마지막 실험장.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Steam Locomotives of the South African Railways, Vol. 1: 1859–1910",
+          "author": "D. F. Holland",
+          "publisher": "David & Charles, Newton Abbot",
+          "year": 1971,
+          "lang": "en",
+          "isbn": "9780715353820",
+          "url": null,
+          "note": "남아공 증기기관차 표준 형식사 1권.",
+          "via": "Amazon 서지"
+        },
+        {
+          "kind": "book",
+          "title": "Steam Locomotives of the South African Railways, Vol. 2: 1910–1955",
+          "author": "D. F. Holland",
+          "publisher": "David & Charles, Newton Abbot",
+          "year": 1972,
+          "lang": "en",
+          "isbn": "978-0-7153-5427-8",
+          "url": null,
+          "note": "2권 — 15F·GL·25NC 등 20세기 형식.",
+          "via": "en.wikipedia 'South African Class 25' 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Locomotives of the South African Railways: A Concise Guide",
+          "author": "Leith Paxton, David Bourne",
+          "publisher": "Struik, Cape Town",
+          "year": 1985,
+          "lang": "en",
+          "isbn": "0869772112",
+          "url": null,
+          "note": "SAR 전 형식 요약 편람.",
+          "via": "en.wikipedia 문헌목록 / AbeBooks"
+        },
+        {
+          "kind": "book",
+          "title": "Twilight of South African Steam",
+          "author": "A. E. Durrant",
+          "publisher": "David & Charles, Newton Abbot",
+          "year": 1989,
+          "lang": "en",
+          "isbn": "0715386387",
+          "url": null,
+          "note": "남아공 증기 말기(1980년대)의 기록.",
+          "via": "en.wikipedia 문헌목록"
+        }
+      ]
+    },
+    {
+      "code": "RU",
+      "nameKo": "러시아·소련",
+      "nameEn": "Russia / USSR",
+      "flag": "🇷🇺",
+      "lat": 60.0,
+      "lon": 90.0,
+      "blurb": "광궤(1520mm)의 여유로 대형 보일러를 얹은 기관차들. 4-14-4 같은 극단적 시도도 있었다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Локомотивы отечественных железных дорог (1845–1955 гг.)",
+          "author": "В. А. Раков",
+          "publisher": "Транспорт, Москва",
+          "year": 1995,
+          "lang": "ru",
+          "isbn": "5-277-00821-7",
+          "url": null,
+          "note": "러시아·소련 기관차의 표준 편람(2-е изд., 564쪽). Э·П36·Л·АА20 모두 수록.",
+          "via": "CentrMag 서지(ISBN 5-277-00821-7)"
+        },
+        {
+          "kind": "book",
+          "title": "Soviet Locomotive Types: The Union Legacy",
+          "author": "Anthony J. Heywood, Ian D. C. Button",
+          "publisher": "Luddenden Press / Frank Stenvall",
+          "year": 1995,
+          "lang": "en",
+          "isbn": "9172661321",
+          "url": null,
+          "note": "1992년 1월 기준 1520mm 궤간 전 형식 목록·보존 현황(영문).",
+          "via": "AbeBooks 서지"
+        },
+        {
+          "kind": "book",
+          "title": "Soviet Locomotive Technology During Industrialization, 1928–1952",
+          "author": "J. N. Westwood",
+          "publisher": "Macmillan, London",
+          "year": 1982,
+          "lang": "en",
+          "isbn": "0333275160",
+          "url": null,
+          "note": "소련 공업화기 기관차 기술사 — АА20 실험과 표준화 정책의 배경(영문 학술서).",
+          "via": "Stanford SearchWorks 서지"
+        }
+      ]
+    },
+    {
+      "code": "PL",
+      "nameKo": "폴란드",
+      "nameEn": "Poland",
+      "flag": "🇵🇱",
+      "lat": 52.0,
+      "lon": 19.5,
+      "blurb": "볼슈틴(Wolsztyn) 기관고 — 세계에서 유일하게 정기 여객열차를 증기로 끌던 곳.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Parowozy normalnotorowe produkcji polskiej",
+          "author": "Bogdan Pokropiński",
+          "publisher": "Wydawnictwa Komunikacji i Łączności (WKŁ), Warszawa",
+          "year": 1987,
+          "lang": "pl",
+          "isbn": "978-83-206-1617-0",
+          "url": "https://www.wkl.com.pl/parowozy-normalnotorowe-produkcji-polskiej,1,1,437",
+          "note": "폴란드 국산 표준궤 증기기관차 총람(Ol49·Pm36·Ty51 포함). 신판 ISBN 978-83-206-1617-0(292쪽).",
+          "via": "WKŁ 출판사 페이지 / parowozy.net 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Atlas parowozów",
+          "author": "Paweł Terczyński",
+          "publisher": "Poznański Klub Modelarzy Kolejowych, Poznań",
+          "year": 2003,
+          "lang": "pl",
+          "isbn": null,
+          "url": null,
+          "note": "PKP 증기기관차 형식 도감.",
+          "via": "parowozy.net 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Parowozy kolei polskich",
+          "author": "Jan Piwowoński",
+          "publisher": "WKŁ, Warszawa",
+          "year": 1978,
+          "lang": "pl",
+          "isbn": null,
+          "url": null,
+          "note": "폴란드 철도 증기기관차 통사.",
+          "via": "parowozy.net 문헌목록"
+        }
+      ]
+    },
+    {
+      "code": "AU",
+      "nameKo": "호주",
+      "nameEn": "Australia",
+      "flag": "🇦🇺",
+      "lat": -25.5,
+      "lon": 134.0,
+      "blurb": "주(州)마다 궤간이 달랐던 나라. 영국식 설계에 현지 개량을 얹은 형식들이 많다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Locomotives of Australia 1850s–2010",
+          "author": "Leon Oberg",
+          "publisher": "Rosenberg Publishing, Kenthurst NSW",
+          "year": 2010,
+          "lang": "en",
+          "isbn": "9781921719011",
+          "url": null,
+          "note": "호주 전 주(州) 기관차 편람 5판.",
+          "via": "en.wikipedia 'NSW C38 class' 문헌목록"
+        }
+      ]
+    },
+    {
+      "code": "CA",
+      "nameKo": "캐나다",
+      "nameEn": "Canada",
+      "flag": "🇨🇦",
+      "lat": 56.0,
+      "lon": -106.0,
+      "blurb": "대륙 횡단 노선과 혹한. CPR 로열 허드슨 같은 장거리 여객기가 상징.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Canadian Pacific Steam Locomotives",
+          "author": "Omer Lavallée (Archie Williamson 협력)",
+          "publisher": "Railfare, Toronto",
+          "year": 1985,
+          "lang": "en",
+          "isbn": "0919130348",
+          "url": null,
+          "note": "CPR 증기기관차 전 형식사 — 로열 허드슨(H1c–e) 포함.",
+          "via": "eBay 상품 서지(ISBN 0919130348)"
+        },
+        {
+          "kind": "book",
+          "title": "Canadian National Steam Power",
+          "author": "Anthony Clegg, Ray Corley",
+          "publisher": "Railfare, Montreal",
+          "year": 1969,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "CN 증기기관차 형식사 — U-1-f 포함.",
+          "via": "Yesterday's Muse 서지"
+        }
+      ]
+    },
+    {
+      "code": "CH",
+      "nameKo": "스위스",
+      "nameEn": "Switzerland",
+      "flag": "🇨🇭",
+      "lat": 46.8,
+      "lon": 8.2,
+      "blurb": "치차(rack) 등판 기관차의 본고장. 알프스 급구배를 증기로 오른다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Der Dampfbetrieb der schweizerischen Eisenbahnen 1847–1966",
+          "author": "Alfred Moser (4. Aufl. bearb. Paul Winter u. a.)",
+          "publisher": "Birkhäuser, Basel",
+          "year": 1967,
+          "lang": "de",
+          "isbn": null,
+          "url": null,
+          "note": "스위스 전 철도의 증기기관차를 망라한 결정판(4판). E 3/3·HG 3/4 수록.",
+          "via": "ZVAB/AbeBooks 서지(1967, 4. Aufl.)"
+        }
+      ]
+    },
+    {
+      "code": "AR",
+      "nameKo": "아르헨티나",
+      "nameEn": "Argentina",
+      "flag": "🇦🇷",
+      "lat": -38.0,
+      "lon": -64.0,
+      "blurb": "파타고니아의 750mm 협궤 '라 트로치타'가 아직도 달린다.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "La Trochita. Un viaje en el tiempo y la distancia en el Viejo Expreso Patagónico",
+          "author": "Sergio Sepiurka, Jorge Miglioli",
+          "publisher": "(아르헨티나)",
+          "year": 2001,
+          "lang": "es",
+          "isbn": null,
+          "url": null,
+          "note": "에스켈선 750mm 협궤의 역사·증언·전망(2판 2022, 개통 100주년).",
+          "via": "Red43 기사(2022 2판 발표) / latrochita.com"
+        },
+        {
+          "kind": "book",
+          "title": "The Old Patagonian Express",
+          "author": "Paul Theroux",
+          "publisher": "Houghton Mifflin, Boston",
+          "year": 1979,
+          "lang": "en",
+          "isbn": null,
+          "url": null,
+          "note": "이 노선을 세계에 알린 여행기.",
+          "via": "en.wikipedia 'La Trochita'"
+        }
+      ]
+    },
+    {
+      "code": "IT",
+      "nameKo": "이탈리아",
+      "nameEn": "Italy",
+      "flag": "🇮🇹",
+      "lat": 42.8,
+      "lon": 12.5,
+      "blurb": "카프로티 밸브기어 등 독자 기술. 남유럽 특유의 경량 고속기.",
+      "references": [
+        {
+          "kind": "book",
+          "title": "Locomotive a vapore FS",
+          "author": "Giovanni Cornolò",
+          "publisher": "Ermanno Albertelli, Parma",
+          "year": 1998,
+          "lang": "it",
+          "isbn": null,
+          "url": null,
+          "note": "FS 증기기관차 전 형식(2판, 608쪽; 2014 분책 재간).",
+          "via": "Duegi Editrice 서지 / en.wikipedia 문헌목록"
+        },
+        {
+          "kind": "book",
+          "title": "Italian State Railways Steam Locomotives",
+          "author": "P. M. Kalla-Bishop",
+          "publisher": "Tourret Publishing, Abingdon",
+          "year": 1986,
+          "lang": "en",
+          "isbn": "0-905878-03-5",
+          "url": null,
+          "note": "FS 증기기관차 영문 형식사.",
+          "via": "en.wikipedia 'FS Class 835' 문헌목록"
+        }
+      ]
+    }
+  ]
+}

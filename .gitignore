@@ -1,0 +1,25 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# 플랫폼 스캐폴딩 (flutter create . 로 생성)
+/android/
+/ios/
+/web/
+/macos/
+/linux/
+/windows/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Python (데이터 빌드 도구)
+__pycache__/
+*.pyc
