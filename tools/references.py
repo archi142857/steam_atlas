@@ -238,7 +238,7 @@ _POKROP = COUNTRY_REFS["PL"][0]
 _HUGHES1, _HUGHES3, _HUGHES4 = COUNTRY_REFS["IN"]
 _CHAPELON, _ROGERS, _DURRANT_G, _WARDALE = GENERAL[0], GENERAL[1], GENERAL[2], GENERAL[3]
 
-# 뉴커먼 학회지(Transactions of the Newcomen Society) 논문 — 서지는 Crossref DOI 레코드로 확인 (v0.12).
+# 뉴커먼 학회지(Transactions of the Newcomen Society) 논문 — 서지는 Crossref DOI 레코드로 확인.
 def _tns(title, author, vol, pages, year, doi, note):
     return ref("article", title, author, f"Transactions of the Newcomen Society, vol. {vol}, pp. {pages}", year, "en",
                note, f"Crossref DOI {doi}", url=f"https://doi.org/{doi}")

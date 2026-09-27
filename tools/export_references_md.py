@@ -54,16 +54,16 @@ def main():
 
     out = []
     out.append("# Steam Atlas — 참고문헌 (서적·논문·공식 자료)\n")
-    out.append(f"2026-09-23 기준(v0.12). `steam_atlas/tools/references.py` 의 정리본이며 앱 상세 화면 '참고문헌' 섹션과 같은 내용이다 — "
+    out.append(f"2026-09-23 기준(0.1.0). `steam_atlas/tools/references.py` 의 정리본이며 앱 상세 화면 '참고문헌' 섹션과 같은 내용이다 — "
                f"종합 {len(general)} · 국가별 {n_country} · 기관차별 {n_loco}량(항목 {n_total}건, 같은 책이 여러 량에 걸리면 각각 셈). "
                "웹 페이지 출처(위키·박물관 웹)는 `고증-대조-기록.md` 에 따로 있다. 이 문서는 `tools/export_references_md.py` 가 만든다.\n")
     out.append("**원칙**")
     out.append("- 현지어 자료 우선: 한국(철도청·국가유산청·조선총독부 사서·철도차량기술검정단), 일본(国鉄·NDL·文化庁), 독일(EK/transpress), 프랑스(Chapelon·La Vie du Rail·CNRS), "
                "폴란드(WKŁ·Problemy Kolejnictwa), 러시아(Раков), 중국(中国铁道出版社), 남아공(Holland/Wardale) …")
-    out.append("- 도서관 목록·출판사·학술DB·공식 페이지에서 **서지사항을 확인한 것만** 실었다. 확인 경로를 항목마다 적었다. (v0.12) 학술지 논문은 Crossref DOI 레코드로 제목·저자·권·쪽을 확인했다.")
+    out.append("- 도서관 목록·출판사·학술DB·공식 페이지에서 **서지사항을 확인한 것만** 실었다. 확인 경로를 항목마다 적었다. 학술지 논문은 Crossref DOI 레코드로 제목·저자·권·쪽을 확인했다.")
     out.append("- 확인하지 못한 연도는 '연도 미확인'으로 둔다. 그럴듯하게 채우지 않는다.")
     out.append("- 접근이 막혀 확인하지 못한 것: 러시아어 위키 문헌목록(ru.wikipedia 차단), 중국어 위키(zh.wikipedia 차단), 국립러시아도서관 목록(nlr.ru 시간초과), "
-               "(v0.12) 국가유산포털·의왕시·roteco 100년사 본문(robots/시간초과). 러시아·중국은 판매·서지 사이트의 ISBN 기록으로 대신 확인했다.\n")
+               "국가유산포털·의왕시·roteco 100년사 본문(robots/시간초과). 러시아·중국은 판매·서지 사이트의 ISBN 기록으로 대신 확인했다.\n")
 
     out.append("## 여러 나라에 걸친 종합서\n")
     out.append(table(general))

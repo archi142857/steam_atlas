@@ -218,7 +218,7 @@ class _MapScreenState extends State<MapScreen> {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.steam_atlas',
                 ),
-              // 마커 — 카메라가 움직일 때마다 현재 줌의 픽셀 거리로 다시 묶는다 (v0.12 클러스터링).
+              // 마커 — 카메라가 움직일 때마다 현재 줌의 픽셀 거리로 다시 묶는다 (클러스터링).
               // MapCamera.of 는 카메라 변화에 이 Builder 만 다시 그리게 한다. 선택된 량은 묶지 않고
               // 항상 낱개로 위에 그린다 — 아래 카드가 가리키는 마커가 숫자 속으로 사라지면 안 되니까.
               Builder(builder: (context) {

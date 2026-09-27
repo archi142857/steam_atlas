@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'map_geometry.dart';
 
-/// 마커 클러스터링 — 순수 Dart, 위젯 없이 테스트한다 (v0.12).
+/// 마커 클러스터링 — 순수 Dart, 위젯 없이 테스트한다.
 ///
 /// 유럽·일본처럼 보존 차량이 몰린 곳은 축소하면 마커가 겹쳐 하나처럼 보인다. 그래서
 /// **화면 픽셀 거리**가 [clusterMarkers] 의 `radiusPx` 안에 드는 마커끼리 묶어 숫자 하나로 그린다.

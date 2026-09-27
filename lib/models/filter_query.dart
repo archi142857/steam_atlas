@@ -29,7 +29,7 @@ class FilterQuery {
   final Set<LocoStatus> statuses;
   final Set<int> gauges;
 
-  /// 도색 색상 계열 / 생김새(실루엣) — v0.12. 둘 다 카탈로그 값이라 id 로 든다.
+  /// 도색 색상 계열 / 생김새(실루엣) — 둘 다 카탈로그 값이라 id 로 든다.
   final Set<LiveryFamily> liveryFamilies;
   final Set<String> shapes;
   final bool iconicOnly;

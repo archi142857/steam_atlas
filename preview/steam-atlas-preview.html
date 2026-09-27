@@ -259,7 +259,7 @@
   .hero{background:var(--hero);border-radius:18px;padding:16px 14px;
     display:grid;place-items:center;margin-bottom:10px;overflow:hidden}
   .hero .plate{padding:16px 18px;border-radius:16px;max-width:100%}
-  /* 비교 (v0.12) — 탐색 목록 아래에 붙는 알약, 상세 상단의 ⇄ 버튼, 비교 시트 */
+  /* 비교 — 탐색 목록 아래에 붙는 알약, 상세 상단의 ⇄ 버튼, 비교 시트 */
   .cmppillwrap{position:sticky;bottom:12px;display:flex;justify-content:center;padding:6px 0 0;pointer-events:none;z-index:25}
   .cmppill{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:9px 14px 9px 16px;border-radius:99px;cursor:pointer;
     font-family:inherit;font-size:12.5px;font-weight:700;background:var(--raised);color:var(--muted);
@@ -391,7 +391,7 @@
       <ul>
         <li><b>사진</b> — Wikimedia Commons의 CC/PD 이미지부터. 라이선스·저작자 필드를 스키마에 추가해야 합니다.</li>
         <li><b>제원 검증</b> — 견인력·출력은 자료마다 값이 갈립니다. 지금은 <code>verified</code> 플래그로 확인한 것만 표시해뒀습니다.</li>
-        <li><b>비교 기능</b> — v0.12 에 들어갔습니다. 상세의 ⇄ 버튼으로 2량을 넣으면 비교 시트가 열립니다. 중량은 기준(단독/+탄수차)이 같을 때만 대조합니다.</li>
+        <li><b>비교 기능</b> — 들어갔습니다. 상세의 ⇄ 버튼으로 2량을 넣으면 비교 시트가 열립니다. 중량은 기준(단독/+탄수차)이 같을 때만 대조합니다.</li>
         <li><b>테마 세부</b> — 지금은 라이트/다크/시스템 3단계입니다. 폰트 크기나 고대비 모드가 필요하면 설정 탭에 이어 붙이면 됩니다.</li>
         <li><b>국가 추가</b> — 스페인·브라질·뉴질랜드·대만, 그리고 확인 가능한 범위의 북한 보존 차량.</li>
       </ul>
@@ -435,7 +435,7 @@ const SORTS={year:'제작연도',speed:'최고속도',power:'견인력',weight:'
 
 let state={tab:0,text:'',countries:new Set(),eras:new Set(),services:new Set(),
   statuses:new Set(),iconicOnly:false,aliveOnly:false,sort:'year',desc:false,
-  liveryFams:new Set(),shapes:new Set(),   // 도색 계열 · 생김새 (v0.12)
+  liveryFams:new Set(),shapes:new Set(),   // 도색 계열 · 생김새
   detail:null,mapSel:null,mapPick:null,   // mapPick: 같은 자리에 겹친 량들의 id 목록 (지도 아래 고르기)
   compare:[],compareOpen:false,   // 비교: 최대 2량 (셋째를 넣으면 먼저 넣은 것이 빠짐)
   theme:'light',                // system | light | dark — 라이트가 기본
@@ -596,7 +596,7 @@ function whyteSvg(whyte, h=32, color='#9AA0A8', tenderAxles=0, livery=null, shap
   const edge=livery ? livery.edge : color;
   const ST=`fill="none" stroke="${line}" stroke-width="${sw}" stroke-linejoin="round"`;
   const B=`fill="${bodyFill}" stroke="${edge}" stroke-width="${sw}" stroke-linejoin="round"`;
-  // 2색 도색 (v0.12): 둘째 색은 정해진 부위(보일러·운전실+탄수차+치마·굴뚝·바퀴)에만. 앱의 _WhytePainter.fillFor 와 같다.
+  // 2색 도색: 둘째 색은 정해진 부위(보일러·운전실+탄수차+치마·굴뚝·바퀴)에만. 앱의 _WhytePainter.fillFor 와 같다.
   const acc=livery&&livery.accent||null;
   const BA=role=>(acc&&acc.role===role)?`fill="${acc.color}" stroke="${edge}" stroke-width="${sw}" stroke-linejoin="round"`:B;
   const n=v=>v.toFixed(1);
@@ -932,7 +932,7 @@ function filterChips(){
   Object.entries(SERVICE_LABEL).forEach(([k,v])=>h+=`<button class="chip ${state.services.has(k)?'on':''}" data-svc="${k}">${v}</button>`);
   h+='</div><div class="chips">';
   COUNTRIES.forEach(c=>h+=`<button class="chip ${state.countries.has(c.code)?'on':''}" data-ctry="${c.code}">${flagImg(c.code,'sm')} ${c.nameKo}</button>`);
-  // 도색 계열(견본색 점 + 량 수) · 생김새 — 데이터에 실제로 쓰인 것만 (v0.12)
+  // 도색 계열(견본색 점 + 량 수) · 생김새 — 데이터에 실제로 쓰인 것만
   h+='</div><div class="chips">';
   LIVERY_FAMILIES.forEach(([k,ko,sw])=>{ const n=LOCOS.filter(l=>liveryOf(l)?.family===k).length; if(!n) return;
     h+=`<button class="chip ${state.liveryFams.has(k)?'on':''}" data-lvf="${k}" title="${ko} 계열 도색 ${n}량"><i class="dot" style="background:${sw}"></i>${ko}<span class="n">${n}</span></button>`; });
@@ -963,7 +963,7 @@ function exploreHtml(){
   <div id="qres">${exploreResultsHtml()}</div>${comparePillHtml()}`;
 }
 
-// ── 비교 (v0.12) ──
+// ── 비교 ──
 // 앱의 AppState.toggleCompare 와 같은 규칙: 최대 2량, 셋째를 넣으면 먼저 넣은 것이 빠진다.
 function compareIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4"/></svg>`;}
 function toggleCompare(id){
@@ -1140,7 +1140,7 @@ function clampPan(P){
   m.ty=Math.min(0,Math.max(P.H-m.z*P.H, m.ty));    // 상하: 세계의 위아래 끝이 칸 밖으로 못 들어옴 (z=1 이면 0 고정)
 }
 
-// ── 마커 클러스터링 (v0.12) ──
+// ── 마커 클러스터링 ──
 // 앱의 core/marker_cluster.dart 와 같은 규칙: 탐욕적·결정적, 화면 픽셀 거리로 묶고, x 는 세계 폭을 법으로 잰다.
 // 여기서는 세계 좌표(z=1)에서 묶되 반지름을 z 로 나눈다 — 화면 거리 = 세계 거리 × z 이므로 같은 결과.
 const CLUSTER_R=22;   // 화면 px(viewBox 단위 ≈ px). 마커 지름 9.2 + 여유. 앱은 핀이 커서 28.
@@ -1522,7 +1522,7 @@ function detailHtml(l){
 }
 
 function iconTune(){return `<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>`;}
-// 탭 인덱스는 여기서만 정의한다 (국가별 탭은 v0.9에서 뺌 — 탐색의 국가 필터와 겹쳤다)
+// 탭 인덱스는 여기서만 정의한다 (국가별 탭은 뺌 — 탐색의 국가 필터와 겹쳤다)
 const TAB={home:0,explore:1,timeline:2,map:3,settings:4};
 const ICONS=[
   ['홈','<path d="M4 10 12 3l8 7v10a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>'],

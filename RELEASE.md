@@ -111,7 +111,7 @@ flutter create . --project-name steam_atlas --org com.<본인도메인역순>
 
 ### 마감 전 코드 정리
 - [ ] `flutter analyze` 무경고
-- [ ] `flutter test` 전부 통과 (0.1.0 기준 46개: 정합성 31 + 지도 앱 3 + 카메라 4 + 클러스터 6 + 비교 2) — **지도 순환(v0.10)부터 0.1.0 까지는 작업 환경에서 Flutter SDK 를 받지 못해 컴파일하지 않았다.** 가장 먼저 `flutter analyze` 부터 돌릴 것
+- [ ] `flutter test` 전부 통과 (0.1.0 기준 46개: 정합성 31 + 지도 앱 3 + 카메라 4 + 클러스터 6 + 비교 2) — **지도 순환 작업 이후 0.1.0 까지의 코드는 작업 환경에서 Flutter SDK 를 받지 못해 컴파일하지 않았다.** 가장 먼저 `flutter analyze` 부터 돌릴 것
 - [ ] 앱 아이콘 / 스플래시 (`flutter_launcher_icons`, `flutter_native_splash`)
 - [ ] 시스템 폰트 확대(200%)에서 레이아웃 깨짐 확인 — 카드의 고정 높이 부분
 - [ ] 데이터 로딩 실패 화면 문구 확인 (`app.dart` 의 에러 분기)

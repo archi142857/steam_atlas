@@ -169,7 +169,7 @@ void main() {
     expect(none, isEmpty);
   });
 
-  test('도색 계열·생김새 필터 (v0.12)', () {
+  test('도색 계열·생김새 필터', () {
     // 모든 도색에 계열이 있고, 이름과 계열이 어긋나지 않는다 ('블랙'은 검정, '그린'은 녹색).
     for (final lv in repo.liveries) {
       expect(lv.family, isNotNull, reason: lv.id);
@@ -201,7 +201,7 @@ void main() {
     expect(const FilterQuery(liveryFamilies: {LiveryFamily.red}, shapes: {'american'}).activeCount, 2);
   });
 
-  test('2색 도색 (v0.12): 둘째 색은 부위와 근거가 같이 있다', () {
+  test('2색 도색: 둘째 색은 부위와 근거가 같이 있다', () {
     final two = repo.liveries.where((l) => l.accent != null).toList();
     expect(two.length, greaterThanOrEqualTo(9));
     for (final l in two) {
@@ -382,7 +382,7 @@ void main() {
   });
 
   test('도색 색상이 흰 도식 판 위에서 구분된다', () {
-    // 도식은 테마와 무관하게 항상 흰 판(AppTheme.plate) 위에 그린다 (v0.9).
+    // 도식은 테마와 무관하게 항상 흰 판(AppTheme.plate) 위에 그린다.
     // 실제 도색의 8할이 검정에 가까워서 다크 배경에서는 형식이 구분되지 않았다.
     double lum(Color c) {
       double ch(int v) {
