@@ -55,7 +55,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Marker _pinMarker(Locomotive l) => Marker(
-        point: LatLng(l.location!.lat, l.location!.lon),
+        point: LatLng(l.location!.lat!, l.location!.lon!),
         width: 34,
         height: 34,
         child: _Pin(
@@ -85,7 +85,7 @@ class _MapScreenState extends State<MapScreen> {
     var minY = double.infinity, maxY = -double.infinity;
     final w = MapGeometry.worldSizePx(zoom);
     for (final l in c.members) {
-      final p = MapProjection.project(l.location!.lat, l.location!.lon, zoom);
+      final p = MapProjection.project(l.location!.lat!, l.location!.lon!, zoom);
       // 순환 경계를 넘는 묶음: 중심 기준으로 가까운 쪽에 놓고 잰다
       var dx = p.x - c.x;
       dx = ((dx + w / 2) % w + w) % w - w / 2;
@@ -145,7 +145,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 minLeadingWidth: 10,
                 title: Text(l.nameKo, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('${l.classDesignation} · ${l.status.labelKo}',
+                subtitle: Text([if (l.classDesignation != null) l.classDesignation!, l.status.labelKo].join(' · '),
                     style: const TextStyle(fontSize: 12)),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(ctx).pop(l),
@@ -227,7 +227,7 @@ class _MapScreenState extends State<MapScreen> {
                 final selectedId = _selected?.id;
                 final clusters = clusterMarkers<Locomotive>(
                   items.where((l) => l.id != selectedId),
-                  (l) => MapProjection.project(l.location!.lat, l.location!.lon, zoom),
+                  (l) => MapProjection.project(l.location!.lat!, l.location!.lon!, zoom),
                   radiusPx: _clusterRadiusPx,
                   worldWidthPx: MapGeometry.worldSizePx(zoom),
                 );

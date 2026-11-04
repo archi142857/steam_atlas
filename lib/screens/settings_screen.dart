@@ -61,6 +61,27 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 const _ThemePreview(),
 
+                // ── 제원 단위 ──────────────────────────────
+                const SizedBox(height: 30),
+                const _Heading('제원 단위'),
+                const SizedBox(height: 10),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('미터법만')),
+                    ButtonSegment(value: true, label: Text('원래 단위 함께')),
+                  ],
+                  selected: {app.showOriginalUnits},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) => app.setShowOriginalUnits(s.first),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  app.showOriginalUnits
+                      ? '항목 화면의 제원표에 출처가 쓴 원래 단위를 함께 적어요(1,067 mm  42 in).'
+                      : '항목 화면의 제원표를 미터법으로만 적어요.',
+                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                ),
+
                 // ── 저장한 항목 ────────────────────────────
                 const SizedBox(height: 30),
                 const _Heading('저장한 기관차'),
@@ -169,11 +190,24 @@ class SettingsScreen extends StatelessWidget {
                           backgroundColor: scheme.surfaceContainerHighest,
                         ),
                       ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Text('설명 글의 출처',
+                              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                          const Spacer(),
+                          Text(
+                            '${repo.all.fold<int>(0, (n, l) => n + l.sources.length)}건 · '
+                            '더 읽을거리 ${repo.all.fold<int>(0, (n, l) => n + l.furtherReading.length)}건',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 10),
                       Text(
-                        '증기기관차 제원은 자료마다 값이 다릅니다(측정 조건·개조 시점·단위 환산). '
-                        '교차 확인을 마친 항목만 위 비율에 들어가고, 나머지는 상세 화면에 '
-                        '"수치 확인 필요"로 표시됩니다.',
+                        '증기기관차 제원은 자료마다 값이 달라요(측정 조건·개조 시점·단위 환산). '
+                        '항목의 글과 제원은 자료조사 원고에서 왔고, 문장마다 출처 번호가 있어요. '
+                        '출처끼리 값이 엇갈려 아직 확인하고 있는 항목은 항목 화면에 따로 적어 두었어요.',
                         style: TextStyle(
                             fontSize: 11.5,
                             height: 1.6,
@@ -189,8 +223,8 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 const _Row(
                   icon: Icons.train_rounded,
-                  title: 'Steam Atlas 0.1.0',
-                  subtitle: '데이터 스키마 v1',
+                  title: 'Steam Atlas 0.2.0',
+                  subtitle: '데이터 스키마 v2 (한영 원고)',
                 ),
                 const _Row(
                   icon: Icons.flag_rounded,
@@ -221,7 +255,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => showLicensePage(
                     context: context,
                     applicationName: 'Steam Atlas',
-                    applicationVersion: '0.1.0',
+                    applicationVersion: '0.2.0',
                     applicationLegalese: '© 2026 이영표 (LEE YOUNGPYO). 코드 MIT · 데이터 CC BY-SA 4.0',
                   ),
                   borderRadius: BorderRadius.circular(8),

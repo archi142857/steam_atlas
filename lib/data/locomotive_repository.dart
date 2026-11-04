@@ -188,6 +188,7 @@ class LocomotiveRepository {
     return switch (by) {
       SortBy.year => cmpNullable(a.builtFrom ?? a.builtTo, b.builtFrom ?? b.builtTo),
       SortBy.speed => cmpNullable(a.specs.topSpeedKmh, b.specs.topSpeedKmh),
+      SortBy.recordSpeed => cmpNullable(a.specs.recordSpeedKmh, b.specs.recordSpeedKmh),
       SortBy.power =>
         cmpNullable(a.specs.tractiveEffortKn, b.specs.tractiveEffortKn),
       SortBy.weight => cmpNullable(a.specs.weightT, b.specs.weightT),
@@ -195,9 +196,9 @@ class LocomotiveRepository {
     };
   }
 
-  /// 지도에 찍을 수 있는 항목만.
+  /// 지도에 찍을 수 있는 항목만 — 좌표가 있는 곳. '러시아 각지'처럼 좌표 없는 위치는 빠진다.
   List<Locomotive> withLocation(FilterQuery q) =>
-      query(q).where((l) => l.location != null).toList();
+      query(q).where((l) => l.location?.hasPoint ?? false).toList();
 
   /// 연표용: 시대 → 해당 기관차 목록(연도순).
   Map<Era, List<Locomotive>> groupedByEra(FilterQuery q) {

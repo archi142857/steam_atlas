@@ -10,7 +10,7 @@ import '../models/locomotive.dart';
 ///
 /// - 데이터 로딩 라이프사이클
 /// - 화면들이 공유하는 [FilterQuery]
-/// - 테마 모드, 즐겨찾기 (shared_preferences 로 영속화)
+/// - 테마 모드, 즐겨찾기, 단위 표시 (shared_preferences 로 영속화)
 class AppState extends ChangeNotifier {
   AppState({LocomotiveSource? source})
       : _source = source ?? const AssetLocomotiveSource();
@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   static const _kTheme = 'themeMode';
   static const _kFavorites = 'favorites';
   static const _kOnlineTiles = 'onlineTiles';
+  static const _kOriginalUnits = 'originalUnits';
 
   final LocomotiveSource _source;
   SharedPreferences? _prefs;
@@ -47,6 +48,14 @@ class AppState extends ChangeNotifier {
   bool _onlineTiles = false;
   bool get onlineTiles => _onlineTiles;
 
+  /// 제원표에 원래 단위(42 in, 140 psi …)를 함께 보여 줄지. 기본은 켜짐(설정 '단위').
+  bool _showOriginalUnits = true;
+  bool get showOriginalUnits => _showOriginalUnits;
+
+  /// 설명 글의 언어. 데이터는 한영 짝으로 들어 있지만 화면 문구가 아직 한국어뿐이라 한국어로 고정한다.
+  /// 영어 화면(처음 실행 때 언어 선택, 설정의 언어)은 새 디자인을 옮길 때 이 값을 바꾸게 한다.
+  Lang get lang => Lang.ko;
+
   final Set<String> _favorites = <String>{};
   Set<String> get favorites => Set.unmodifiable(_favorites);
 
@@ -62,6 +71,7 @@ class AppState extends ChangeNotifier {
       _themeMode = _parseTheme(_prefs!.getString(_kTheme));
       _favorites.addAll(_prefs!.getStringList(_kFavorites) ?? const []);
       _onlineTiles = _prefs!.getBool(_kOnlineTiles) ?? false;
+      _showOriginalUnits = _prefs!.getBool(_kOriginalUnits) ?? true;
     } catch (e) {
       debugPrint('설정을 불러오지 못했습니다 (기본값 사용): $e');
     }
@@ -101,6 +111,13 @@ class AppState extends ChangeNotifier {
     _onlineTiles = value;
     notifyListeners();
     _prefs?.setBool(_kOnlineTiles, value);
+  }
+
+  void setShowOriginalUnits(bool value) {
+    if (_showOriginalUnits == value) return;
+    _showOriginalUnits = value;
+    notifyListeners();
+    _prefs?.setBool(_kOriginalUnits, value);
   }
 
   // ── 필터 조작 ────────────────────────────────────────────

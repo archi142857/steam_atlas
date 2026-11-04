@@ -1,18 +1,24 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/format.dart';
 import '../core/place_maps.dart';
-import '../core/theme.dart';
+import '../data/locomotive_repository.dart';
 import '../models/locomotive.dart';
 import '../state/app_state.dart';
 import '../widgets/country_flag.dart';
 import '../widgets/whyte_diagram.dart';
 import 'compare_screen.dart';
 
-/// 상세 카드 — 한 량의 모든 것.
+/// 항목 화면 — 사전 한 장.
+///
+/// 순서는 디자인 확정안(S-entry)을 따른다:
+/// 그림 → 표제란(형식, 차륜 배치 / 제작, 수량, 보존 상태) → 뜻풀이 → 본문 → 제원 → 연혁 → 지금 있는 곳
+/// → 출처 → 더 읽을거리.
+///
+/// 글은 자료조사 원고(tools/manuscript/entries.json)에서 온다. 문장·제원·연혁 끝의 작은 숫자는 아래
+/// '출처' 목록의 번호다. 색과 글꼴은 지금 테마를 따른다 — 확정안의 글꼴·색은 디자인 시스템을 옮길 때 바꾼다.
 class DetailScreen extends StatelessWidget {
   const DetailScreen({super.key, required this.locoId});
 
@@ -31,10 +37,10 @@ class DetailScreen extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(added ? '비교에 넣었습니다 ($n/2)' : '비교에서 뺐습니다 ($n/2)'),
+        content: Text(added ? '비교에 넣었어요 ($n/2)' : '비교에서 뺐어요 ($n/2)'),
         duration: const Duration(seconds: 3),
         action: n == 2
-            ? SnackBarAction(label: '비교 보기', onPressed: () => CompareScreen.push(context))
+            ? SnackBarAction(label: '나란히 보기', onPressed: () => CompareScreen.push(context))
             : null,
       ),
     );
@@ -46,489 +52,327 @@ class DetailScreen extends StatelessWidget {
     final repo = app.repo!;
     final l = repo.byId(locoId);
     if (l == null) {
-      return const Scaffold(body: Center(child: Text('데이터를 찾을 수 없습니다')));
+      return const Scaffold(body: Center(child: Text('항목을 찾지 못했어요')));
     }
     final scheme = Theme.of(context).colorScheme;
+    final lang = app.lang;
     final country = repo.country(l.countryCode);
-    final era = repo.era(l.eraId);
     final livery = repo.liveryOf(l);
     final shape = repo.shapeOf(l);
-    final statusColor = AppTheme.statusColor(l.status, scheme);
+    final compared = app.isCompared(l.id);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 190,
-            actions: [
-              // 비교: 최대 2량. 셋째를 넣으면 먼저 넣은 것이 빠진다 (AppState.toggleCompare).
-              IconButton(
-                tooltip: app.isCompared(l.id) ? '비교에서 빼기' : '비교에 넣기',
-                icon: Badge(
-                  isLabelVisible: app.compareIds.isNotEmpty,
-                  label: Text('${app.compareIds.length}'),
-                  child: const Icon(Icons.compare_arrows_rounded),
-                ),
-                color: app.isCompared(l.id) ? scheme.primary : null,
-                onPressed: () => _toggleCompare(context, app, l),
+      appBar: AppBar(
+        actions: [
+          // 비교: 최대 2량. 셋째를 넣으면 먼저 넣은 것이 빠진다 (AppState.toggleCompare).
+          TextButton(
+            onPressed: () => _toggleCompare(context, app, l),
+            child: Text(
+              compared ? '비교 중 ${app.compareIds.length}/2' : '비교',
+              style: TextStyle(
+                fontWeight: compared ? FontWeight.w700 : FontWeight.w500,
+                color: compared ? scheme.primary : scheme.onSurface,
               ),
-              IconButton(
-                tooltip: app.isFavorite(l.id) ? '북마크 해제' : '북마크',
-                icon: Icon(app.isFavorite(l.id)
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded),
-                color: app.isFavorite(l.id) ? scheme.primary : null,
-                onPressed: () => app.toggleFavorite(l.id),
+            ),
+          ),
+          IconButton(
+            tooltip: app.isFavorite(l.id) ? '저장 취소' : '저장',
+            icon: Icon(app.isFavorite(l.id) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded),
+            color: app.isFavorite(l.id) ? scheme.primary : null,
+            onPressed: () => app.toggleFavorite(l.id),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 48),
+        children: [
+          // ── 그림 ── 삽화가 붙기 전까지는 차륜 도식. 판은 테마와 무관하게 흰색(다크에서 도색이 묻히지 않게).
+          DiagramPlate(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            radius: 4,
+            alignment: Alignment.center,
+            height: 64,
+            child: WhyteDiagram(
+              wheel: l.wheel,
+              tenderAxles: l.effectiveTenderAxles,
+              height: 64,
+              color: scheme.primary,
+              livery: livery,
+              shape: shape,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            Fmt.keepAll(_diagramNote(l, shape)),
+            style: TextStyle(fontSize: 11, height: 1.5, color: scheme.outline),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              CountryFlag(code: l.countryCode, width: 18),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  [
+                    country?.nameKo ?? l.countryCode,
+                    if (l.roadNumber != null) '대표 차량 ${l.roadNumber}',
+                  ].join(' · '),
+                  style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+                ),
               ),
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              // 오른쪽에 액션 버튼이 둘(48×2)이라 접힌 제목이 겹치지 않게 여백을 둔다.
-              titlePadding: const EdgeInsets.fromLTRB(56, 0, 100, 14),
-              title: Text(
-                l.nameKo,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      scheme.surfaceContainerHighest,
-                      scheme.surface,
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 34),
-                    // 사진 자산이 붙기 전까지는 차륜 도식이 히어로 역할을 한다.
-                    // 4-8-8-4 처럼 긴 형식은 화면 폭을 넘기므로 판 안에서 축소한다.
-                    // 판은 테마와 무관하게 흰색 — 다크에서 도색이 묻히지 않게.
-                    child: DiagramPlate(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                      radius: 16,
-                      alignment: Alignment.center,
-                      height: 70,
-                      child: WhyteDiagram(
-                        wheel: l.wheel,
-                        tenderAxles: l.effectiveTenderAxles,
-                        height: 70,
-                        color: scheme.primary,
-                        livery: livery,
-                        shape: shape,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CountryFlag(code: l.countryCode, width: 21),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${country?.nameKo ?? l.countryCode}'
-                          ' · ${l.classDesignation}'
-                          '${l.roadNumber != null ? " · ${l.roadNumber}" : ""}',
-                          style: TextStyle(
-                              fontSize: 13, color: scheme.onSurfaceVariant),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(l.nameEn,
-                      style: TextStyle(
-                          fontSize: 12.5,
-                          fontStyle: FontStyle.italic,
-                          color: scheme.outline)),
-                  // 별명은 공인 형식명과 섞이지 않게 따로 한 줄
-                  if (l.nickname != null) ...[
-                    const SizedBox(height: 3),
-                    Text('별명 · ${l.nickname}',
-                        style: TextStyle(
-                            fontSize: 12.5, color: scheme.onSurfaceVariant)),
-                  ],
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _Tag(text: l.status.labelKo, color: statusColor, filled: true),
-                      if (l.serviceType != ServiceType.narrow) // 궤간 태그와 중복
-                        _Tag(text: l.serviceType.labelKo, color: scheme.outline),
-                      if (era != null)
-                        _Tag(
-                            text: '${era.nameKo} ${era.rangeLabel}',
-                            color: scheme.outline),
-                      _Tag(text: Fmt.gauge(l.gaugeMm), color: scheme.outline),
-                      if (!l.verified)
-                        _Tag(
-                            text: '수치 확인 필요',
-                            color: scheme.secondary,
-                            filled: true),
-                    ],
-                  ),
-                  if (l.summary.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    Text(l.summary,
-                        style: const TextStyle(fontSize: 14.5, height: 1.7)),
-                  ],
-                  if (l.highlights.isNotEmpty) ...[
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final h in l.highlights)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 3),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(Icons.bolt_rounded,
-                                      size: 15, color: scheme.primary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(h,
-                                        style: const TextStyle(
-                                            fontSize: 13, height: 1.5)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  Text(
-                    _diagramNote(l, shape),
-                    style: TextStyle(
-                        fontSize: 11, height: 1.5, color: scheme.outline),
-                  ),
-                  const SizedBox(height: 26),
-                  const _Heading('제원'),
-                  const SizedBox(height: 10),
-                  _SpecGrid(loco: l),
-                  const SizedBox(height: 26),
-                  const _Heading('이력'),
-                  const SizedBox(height: 6),
-                  _KeyValue('차륜 배치',
-                      '${l.wheel.whyte}${l.wheel.typeName != null ? " (${l.wheel.typeName})" : ""}'),
-                  if (l.wheel.uic != null) _KeyValue('UIC 표기', l.wheel.uic!),
-                  if (livery != null) _LiveryRow(livery: livery),
-                  _KeyValue('제작', l.builtLabel),
-                  _KeyValue('생산량', Fmt.count(l.quantityBuilt)),
-                  _KeyValue('퇴역',
-                      l.withdrawnYear == null ? Fmt.dash : '${l.withdrawnYear}'),
-                  _KeyValue('현존', Fmt.count(l.survivors)),
-                  if (l.designer != null) _KeyValue('설계', l.designer!),
-                  if (l.builders.isNotEmpty)
-                    _KeyValue('제조', l.builders.join(', ')),
-                  if (l.operators.isNotEmpty)
-                    _KeyValue('운영', l.operators.join(', ')),
-                  if (l.location != null) ...[
-                    const SizedBox(height: 26),
-                    const _Heading('지금 있는 곳'),
-                    const SizedBox(height: 10),
-                    Material(
-                      color: scheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(14),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        // 탭하면 시스템 '다음으로 열기' 선택창 → 고른 지도 앱에서 시설 이름으로 표시
-                        onTap: () => PlaceMaps.open(context, l),
-                        onLongPress: () =>
-                            PlaceMaps.copyCoordinates(context, l),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: [
-                              Icon(Icons.place_rounded,
-                                  size: 18, color: statusColor),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l.location!.name,
-                                        style: const TextStyle(
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.4)),
-                                    const SizedBox(height: 3),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '${l.location!.lat.toStringAsFixed(3)}, '
-                                          '${l.location!.lon.toStringAsFixed(3)}',
-                                          style: TextStyle(
-                                              fontSize: 11,
-                                              color: scheme.outline),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '지도 앱에서 열기',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: scheme.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.open_in_new_rounded,
-                                  size: 16, color: scheme.primary),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '길게 누르면 좌표만 복사됩니다.',
-                      style: TextStyle(fontSize: 11, color: scheme.outline),
-                    ),
-                  ],
-                  if (l.tags.isNotEmpty) ...[
-                    const SizedBox(height: 26),
-                    const _Heading('태그'),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final t in l.tags)
-                          _Tag(text: '#$t', color: scheme.outline),
-                      ],
-                    ),
-                  ],
-                  // 참고문헌 — 서적·논문·공식 자료. 이 형식을 직접 다룬 것 → 나라 전반 → 종합서 순.
-                  const SizedBox(height: 26),
-                  const _Heading('참고문헌'),
-                  const SizedBox(height: 4),
-                  Text(
-                    '도서관 목록·출판사·학술 DB 에서 서지를 확인한 것만 실었습니다. 웹 페이지는 아래 "웹 출처"에.',
-                    style: TextStyle(fontSize: 11.5, height: 1.5, color: scheme.outline),
-                  ),
-                  const SizedBox(height: 8),
-                  _ReferenceGroup(title: '이 형식을 다룬 문헌', refs: l.references),
-                  _ReferenceGroup(
-                      title: '${country?.nameKo ?? l.countryCode} 증기기관차 전반',
-                      // 같은 책이 형식 문헌에도 있으면 한 번만 (RCTS 형식사 등)
-                      refs: Reference.except(country?.references ?? const [], l.references)),
-                  _ReferenceGroup(title: '여러 나라에 걸친 종합서', refs: repo.generalReferences, collapsed: true),
-                  const SizedBox(height: 26),
-                  const _Heading('웹 출처'),
-                  const SizedBox(height: 8),
-                  if (l.sources.isEmpty)
-                    Text(
-                      '출처 미확인 — 이 항목의 수치는 교차 검증이 필요합니다.',
-                      style: TextStyle(fontSize: 12, color: scheme.secondary),
-                    )
-                  else
-                    for (final s in l.sources)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Text(s,
-                            style: TextStyle(
-                                fontSize: 11.5,
-                                height: 1.5,
-                                color: scheme.outline)),
-                      ),
-                  const SizedBox(height: 48),
+          const SizedBox(height: 8),
+          _TitleBlock(loco: l, lang: lang),
+          if (!l.verified) ...[
+            const SizedBox(height: 8),
+            Text(
+              '일부 수치는 출처끼리 엇갈려 아직 확인하고 있어요.',
+              style: TextStyle(fontSize: 12, color: scheme.secondary),
+            ),
+          ],
+
+          // ── 뜻풀이 · 본문 ──
+          const SizedBox(height: 18),
+          Text.rich(
+            TextSpan(children: [
+              TextSpan(text: Fmt.keepAll(l.gloss.of(lang))),
+              _sup(context, l.gloss.src),
+            ]),
+            style: TextStyle(fontSize: 18, height: 1.5, fontWeight: FontWeight.w600, color: scheme.onSurface),
+          ),
+          if (l.body.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text.rich(
+              TextSpan(children: [
+                for (final s in l.body) ...[
+                  TextSpan(text: Fmt.keepAll(s.of(lang))),
+                  _sup(context, s.src),
+                  const TextSpan(text: ' '),
                 ],
+              ]),
+              style: TextStyle(fontSize: 15, height: 1.75, color: scheme.onSurface),
+            ),
+          ],
+
+          // ── 제원 ──
+          const SizedBox(height: 28),
+          const _SectionTitle('제원'),
+          if (l.specsBasis != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                Fmt.keepAll('기준: ${l.specsBasis!.of(lang)}'),
+                style: TextStyle(fontSize: 12, height: 1.5, color: scheme.onSurfaceVariant),
               ),
             ),
-          ),
+          _SpecTable(loco: l, lang: lang, showOriginal: app.showOriginalUnits),
+
+          // ── 연혁 ──
+          if (l.history.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            const _SectionTitle('연혁'),
+            for (final h in l.history)
+              _Row(
+                label: h.dateLabel(lang),
+                child: Text.rich(
+                  TextSpan(children: [TextSpan(text: Fmt.keepAll(h.of(lang))), _sup(context, h.src)]),
+                  style: const TextStyle(fontSize: 14.5, height: 1.55),
+                ),
+              ),
+          ],
+
+          // ── 지금 있는 곳 ──
+          const SizedBox(height: 28),
+          const _SectionTitle('지금 있는 곳'),
+          _LocationBlock(loco: l, lang: lang),
+
+          // ── 출처 ──
+          if (l.sources.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            const _SectionTitle('출처'),
+            for (final s in l.sources) _SourceTile(source: s, lang: lang),
+          ],
+
+          // ── 더 읽을거리 ──
+          const SizedBox(height: 28),
+          const _SectionTitle('더 읽을거리'),
+          _FurtherReading(loco: l, country: country, repo: repo, lang: lang),
         ],
       ),
     );
   }
 }
 
-class _SpecGrid extends StatelessWidget {
-  const _SpecGrid({required this.loco});
-  final Locomotive loco;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = loco.specs;
-    final items = <(String, String)>[
-      ('최고속도', Fmt.speed(s.topSpeedKmh)),
-      ('견인력', Fmt.te(s.tractiveEffortKn)),
-      ('출력', Fmt.power(s.powerKw)),
-      // 기관차 단독인지 탄수차 포함인지 모르면 비교가 안 되므로 기준을 같이 적는다
-      (s.weightBasis == null ? '중량' : '중량 (${s.weightBasis!.labelKo})',
-          Fmt.weight(s.weightT)),
-      ('동륜 직경', Fmt.mm(s.driverDiameterMm)),
-      ('보일러 압력', Fmt.pressure(s.boilerPressureBar)),
-      ('실린더', s.cylinders == null ? Fmt.dash : '${s.cylinders}기통'),
-      ('전장', Fmt.mm(s.lengthMm)),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 2.5,
+/// 출처 번호 위첨자. 번호가 없으면 빈 칸.
+InlineSpan _sup(BuildContext context, List<int> src) {
+  if (src.isEmpty) return const TextSpan(text: '');
+  final color = Theme.of(context).colorScheme.primary;
+  return WidgetSpan(
+    alignment: PlaceholderAlignment.top,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 2),
+      child: Text(
+        src.join(','),
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: color,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
-      itemCount: items.length,
-      itemBuilder: (context, i) {
-        final scheme = Theme.of(context).colorScheme;
-        final (label, value) = items[i];
-        final missing = value == Fmt.dash;
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(label,
-                  style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: missing ? scheme.outline : scheme.onSurface,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+    ),
+  );
 }
 
-class _Heading extends StatelessWidget {
-  const _Heading(this.text);
+/// 절 제목 — 제목 아래 글자색 1px 선.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
   final String text;
 
   @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      );
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: scheme.onSurface, width: 1))),
+      child: Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+    );
+  }
 }
 
-class _KeyValue extends StatelessWidget {
-  const _KeyValue(this.k, this.v);
-  final String k;
-  final String v;
+/// 표 한 줄 — 왼쪽 이름(96px), 오른쪽 내용. 줄 사이는 가는 선.
+class _Row extends StatelessWidget {
+  const _Row({required this.label, required this.child});
+  final String label;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 11),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: scheme.outlineVariant))),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 78,
-            child: Text(k,
-                style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
+            width: 96,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2, right: 8),
+              child: Text(label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: scheme.onSurfaceVariant,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  )),
+            ),
           ),
-          Expanded(
-            child: Text(v,
-                style: const TextStyle(fontSize: 13, height: 1.5)),
-          ),
+          Expanded(child: child),
         ],
       ),
     );
   }
 }
 
-/// 히어로 도식 아래 설명문.
-///
-/// 도식이 무엇을 근거로 그려졌는지 밝힌다 — 특히 **추정이 섞인 부분**을.
-/// 그림만 보고 '이게 실제 모습'이라고 읽히면 곤란하기 때문이다.
-String _diagramNote(Locomotive l, LocoShape shape) {
-  final parts = <String>['위 그림은 차륜 배치와 생김새를 요약한 도식입니다'];
-  if (shape.note.isNotEmpty) {
-    parts.add('${shape.nameKo} — ${shape.note}');
-  }
-  if (l.tenderAxles == null && l.effectiveTenderAxles > 0) {
-    parts.add('탄수차는 크기로 추정한 개략 표현입니다');
-  }
-  return '${parts.join('. ')}.';
-}
-
-/// 도색 한 줄 — 실제 색 견본 + 이름.
-///
-/// 견본은 **라이트 테마의 원색**을 보여준다. 다크 테마용 값은 배경에 묻히지
-/// 않도록 밝힌 것이라 '실제 도색은 이 색'이라고 말하기 어렵기 때문이다.
-class _LiveryRow extends StatelessWidget {
-  const _LiveryRow({required this.livery});
-  final Livery livery;
+/// 표제란 — 1px 테두리 표. 첫 줄: 형식 | 차륜 배치, 둘째 줄: 제작 | 수량 | 보존 상태.
+class _TitleBlock extends StatelessWidget {
+  const _TitleBlock({required this.loco, required this.lang});
+  final Locomotive loco;
+  final Lang lang;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 78,
-            child: Text('도색',
-                style:
-                    TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
+    final line = BorderSide(color: scheme.onSurface, width: 1);
+    final l = loco;
+    final nick = l.nicknameOf(lang);
+
+    Widget cell(String label, Widget value, {bool right = true, bool bottom = true}) => Container(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+          decoration: BoxDecoration(
+            border: Border(right: right ? line : BorderSide.none, bottom: bottom ? line : BorderSide.none),
           ),
-          _swatch(livery.body, livery.line),
-          // 2색 도색은 둘째 색 견본을 나란히 — 어느 부위인지는 아래 한 줄로.
-          if (livery.accent != null) _swatch(livery.accent!.color, livery.line),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+              const SizedBox(height: 4),
+              value,
+            ],
+          ),
+        );
+
+    TextStyle big([double size = 18]) => TextStyle(
+          fontSize: size,
+          height: 1.25,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurface,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        );
+
+    return Container(
+      decoration: BoxDecoration(border: Border.fromBorderSide(line)),
+      child: Column(
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  '${livery.nameKo} · ${livery.nameEn}',
-                  style: const TextStyle(fontSize: 13, height: 1.5),
-                ),
-                if (livery.accent case final a?)
-                  Text(
-                    '${a.role.labelKo}만 둘째 색${a.note.isEmpty ? '' : ' — ${a.note}'}',
-                    style: TextStyle(fontSize: 11, height: 1.45, color: scheme.outline),
+                Expanded(
+                  flex: 2,
+                  child: cell(
+                    '형식',
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(Fmt.keepAll(l.nameKo), style: big(l.nameKo.length > 8 ? 20 : 25)),
+                        const SizedBox(height: 2),
+                        Text(l.nameEn, style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
+                        if (nick != null) ...[
+                          const SizedBox(height: 2),
+                          Text(Fmt.keepAll('별명 $nick'),
+                              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                        ],
+                      ],
+                    ),
                   ),
+                ),
+                Expanded(
+                  child: cell(
+                    '차륜 배치',
+                    // 가라트(4-8-2+2-8-4)처럼 긴 표기는 줄을 바꾸지 않고 칸 폭에 맞춰 줄인다
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(l.wheel.whyte, style: big(20), maxLines: 1),
+                    ),
+                    right: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: cell('제작', Text(l.builtLabel, style: big()), bottom: false)),
+                Expanded(
+                  child: cell(
+                    '수량',
+                    Text(Fmt.keepAll(l.quantityLabel(lang) ?? '자료 없음'),
+                        style: l.quantityBuilt == null && l.quantityNote == null
+                            ? TextStyle(fontSize: 14, color: scheme.outline)
+                            : big(l.quantityNote != null ? 15 : 18)),
+                    bottom: false,
+                  ),
+                ),
+                Expanded(
+                  child: cell('보존 상태', Text(l.status.label(lang), style: big(16)), right: false, bottom: false),
+                ),
               ],
             ),
           ),
@@ -536,134 +380,301 @@ class _LiveryRow extends StatelessWidget {
       ),
     );
   }
-
-  Widget _swatch(Color fill, Color line) => Container(
-        width: 15,
-        height: 15,
-        margin: const EdgeInsets.only(top: 2, right: 6),
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: line, width: 1),
-        ),
-      );
 }
 
-class _Tag extends StatelessWidget {
-  const _Tag({required this.text, required this.color, this.filled = false});
-  final String text;
-  final Color color;
-  final bool filled;
+/// 제원표 — 원고의 순서(궤간 → 바퀴 → 실린더 → 압력 → 축거 → 물 → 속도 → 견인력 → 출력 → 중량 → 전장).
+///
+/// 값은 미터법, 그 옆에 원래 단위(설정에서 끌 수 있다)와 출처 번호. 단서(기준·변형)는 아래 줄에.
+/// 최고속도는 설계·허용 값, 기록 속도는 시험·운행 중에 낸 값이라 따로 적는다.
+class _SpecTable extends StatelessWidget {
+  const _SpecTable({required this.loco, required this.lang, required this.showOriginal});
+  final Locomotive loco;
+  final Lang lang;
+  final bool showOriginal;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: filled ? color.withValues(alpha: 0.16) : Colors.transparent,
-        border: Border.all(color: color.withValues(alpha: filled ? 0.5 : 0.35)),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w600,
-          color: filled ? color : Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
+  static const _labels = <String, (String, String)>{
+    'gaugeMm': ('궤간', 'mm'),
+    'driverDiameterMm': ('동륜 지름', 'mm'),
+    'leadingWheelDiameterMm': ('선륜 지름', 'mm'),
+    'trailingWheelDiameterMm': ('종륜 지름', 'mm'),
+    'cylinderSize': ('실린더', 'mm'),
+    'cylinders': ('실린더 수', ''),
+    'boilerPressureBar': ('보일러 압력', 'bar'),
+    'wheelbaseMm': ('축거', 'mm'),
+    'waterL': ('물탱크', 'L'),
+    'topSpeedKmh': ('최고속도', 'km/h'),
+    'recordSpeedKmh': ('기록 속도', 'km/h'),
+    'tractiveEffortKn': ('견인력', 'kN'),
+    'powerKw': ('출력', 'kW'),
+    'weightT': ('중량', 't'),
+    'lengthMm': ('전장', 'mm'),
+  };
+
+  /// 칸 이름 → 표시할 값(숫자는 원고의 자릿수 그대로). 값이 없으면 null.
+  String? _value(String key) {
+    final s = loco.specs;
+    final num? n = switch (key) {
+      'gaugeMm' => loco.gaugeMm,
+      'driverDiameterMm' => s.driverDiameterMm,
+      'leadingWheelDiameterMm' => s.leadingWheelDiameterMm,
+      'trailingWheelDiameterMm' => s.trailingWheelDiameterMm,
+      'cylinders' => s.cylinders,
+      'boilerPressureBar' => s.boilerPressureBar,
+      'wheelbaseMm' => s.wheelbaseMm,
+      'waterL' => s.waterL,
+      'topSpeedKmh' => s.topSpeedKmh,
+      'recordSpeedKmh' => s.recordSpeedKmh,
+      'tractiveEffortKn' => s.tractiveEffortKn,
+      'powerKw' => s.powerKw,
+      'weightT' => s.weightT,
+      'lengthMm' => s.lengthMm,
+      _ => null,
+    };
+    if (key == 'cylinderSize') return s.cylinderSize;
+    return n == null ? null : Fmt.plain(n);
   }
-}
-
-
-/// 참고문헌 묶음. 비어 있으면 그리지 않는다. [collapsed] 는 처음에 접어 둔다(종합서처럼 모든 항목에 반복되는 것).
-class _ReferenceGroup extends StatelessWidget {
-  const _ReferenceGroup({required this.title, required this.refs, this.collapsed = false});
-  final String title;
-  final List<Reference> refs;
-  final bool collapsed;
 
   @override
   Widget build(BuildContext context) {
-    if (refs.isEmpty) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    final items = [for (final r in refs) _ReferenceTile(r: r)];
-    if (!collapsed) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+    final rows = <Widget>[];
+    for (final e in loco.specNotes.entries) {
+      final key = e.key;
+      final note = e.value;
+      final label = _labels[key];
+      final value = _value(key);
+      if (label == null || value == null) continue;
+      final (name, unit) = label;
+      final extra = <String>[
+        if (key == 'gaugeMm') Fmt.gaugeClass(loco.gaugeMm),
+        if (key == 'weightT' && loco.specs.weightBasis != null) loco.specs.weightBasis!.label(lang),
+      ];
+      final noteText = note.note(lang);
+      rows.add(_Row(
+        label: name,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(title,
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: value,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface),
+                ),
+                if (unit.isNotEmpty)
+                  TextSpan(text: ' $unit', style: TextStyle(fontSize: 13, color: scheme.onSurface)),
+                if (showOriginal && note.orig != null)
+                  TextSpan(text: '   ${note.orig}', style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
+                for (final x in extra)
+                  TextSpan(text: '   $x', style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
+                _sup(context, note.src),
+              ]),
+              style: const TextStyle(height: 1.45, fontFeatures: [FontFeature.tabularFigures()]),
             ),
-            ...items,
+            if (noteText != null && noteText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(Fmt.keepAll(noteText),
+                    style: TextStyle(fontSize: 12, height: 1.5, color: scheme.onSurfaceVariant)),
+              ),
           ],
         ),
+      ));
+    }
+    if (rows.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text('출처로 확인한 제원이 아직 없어요.', style: TextStyle(fontSize: 13, color: scheme.outline)),
       );
     }
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        dense: true,
-        title: Text('$title (${refs.length})',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
-        children: items,
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+  }
+}
+
+/// 지금 있는 곳 — 장소, 단서, 지도 앱 버튼. 좌표가 없는 곳('러시아 각지')은 글로만.
+class _LocationBlock extends StatelessWidget {
+  const _LocationBlock({required this.loco, required this.lang});
+  final Locomotive loco;
+  final Lang lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final loc = loco.location;
+    if (loc == null) {
+      final text = loco.status == LocoStatus.scrapped
+          ? '남아 있는 차량이 없어요.'
+          : '보존 위치를 출처로 확인하지 못했어요.';
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(text, style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant)),
+      );
+    }
+    final note = loc.noteOf(lang);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: scheme.outlineVariant))),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(children: [TextSpan(text: Fmt.keepAll(loc.nameOf(lang))), _sup(context, loc.src)]),
+                  style: const TextStyle(fontSize: 15, height: 1.45, fontWeight: FontWeight.w600),
+                ),
+                if (note != null && note.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(Fmt.keepAll(note),
+                      style: TextStyle(fontSize: 12.5, height: 1.5, color: scheme.onSurfaceVariant)),
+                ],
+              ],
+            ),
+          ),
+          if (loc.hasPoint) ...[
+            const SizedBox(width: 12),
+            // 탭: 시스템 '다음으로 열기' 선택창 → 고른 지도 앱에서 시설 이름으로. 길게 누르면 좌표 복사.
+            OutlinedButton(
+              onPressed: () => PlaceMaps.open(context, loco),
+              onLongPress: () => PlaceMaps.copyCoordinates(context, loco),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.onSurface,
+                side: BorderSide(color: scheme.onSurface),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: const Size(0, 40),
+              ),
+              child: const Text('지도 앱에서 열기', style: TextStyle(fontSize: 13)),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _ReferenceTile extends StatelessWidget {
-  const _ReferenceTile({required this.r});
-  final Reference r;
+/// 출처 한 줄 — 번호와 서지. 링크가 있으면 눌러서 연다.
+class _SourceTile extends StatelessWidget {
+  const _SourceTile({required this.source, required this.lang});
+  final SourceRef source;
+  final Lang lang;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Column(
+    final url = source.url;
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Tag(text: r.kindLabelKo, color: scheme.outline),
-              const SizedBox(width: 6),
-              _Tag(text: r.lang.toUpperCase(), color: scheme.outline),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(r.citation,
-                    style: const TextStyle(fontSize: 12.5, height: 1.45, fontWeight: FontWeight.w600)),
-              ),
-            ],
+          SizedBox(
+            width: 26,
+            child: Text('${source.n}',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.primary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                )),
           ),
-          if (r.note.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, left: 2),
-              child: Text(r.note,
-                  style: TextStyle(fontSize: 11.5, height: 1.45, color: scheme.onSurfaceVariant)),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(top: 2, left: 2),
+          Expanded(
             child: Text(
-              [
-                if (r.isbn != null) 'ISBN ${r.isbn}',
-                '확인: ${r.via}',
-                if (r.url != null) r.url!,
-              ].join(' · '),
-              style: TextStyle(fontSize: 10.5, height: 1.45, color: scheme.outline),
+              source.of(lang),
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.5,
+                color: scheme.onSurface,
+                decoration: url != null ? TextDecoration.underline : null,
+                decorationColor: scheme.outlineVariant,
+              ),
             ),
           ),
         ],
       ),
     );
+    if (url == null) return row;
+    return InkWell(
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: row,
+    );
   }
+}
+
+/// 더 읽을거리 — 이 형식을 다룬 문헌(원고). 그 아래 나라 전반·여러 나라 종합서는 접어 둔다.
+class _FurtherReading extends StatelessWidget {
+  const _FurtherReading({required this.loco, required this.country, required this.repo, required this.lang});
+  final Locomotive loco;
+  final Country? country;
+  final LocomotiveRepository repo;
+  final Lang lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final countryRefs = Reference.except(country?.references ?? const [], loco.furtherReading);
+    final general = Reference.except(repo.generalReferences, loco.furtherReading);
+
+    Widget item(Reference r, {bool withNote = true}) {
+      final note = r.noteOf(lang);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${r.citation}.', style: const TextStyle(fontSize: 13.5, height: 1.5)),
+            if (withNote && note.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(Fmt.keepAll(note),
+                    style: TextStyle(fontSize: 12, height: 1.5, color: scheme.onSurfaceVariant)),
+              ),
+          ],
+        ),
+      );
+    }
+
+    Widget folded(String title, List<Reference> refs) => Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text('$title ${refs.length}건',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant)),
+            children: [for (final r in refs) item(r, withNote: false)],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 4),
+        if (loco.furtherReading.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('이 형식만 다룬 책은 아직 찾지 못했어요.',
+                style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
+          ),
+        for (final r in loco.furtherReading) item(r),
+        if (countryRefs.isNotEmpty) folded('${country?.nameKo ?? loco.countryCode} 증기기관차 전반', countryRefs),
+        if (general.isNotEmpty) folded('여러 나라를 함께 다룬 책', general),
+      ],
+    );
+  }
+}
+
+/// 그림 아래 설명 — 도식이 무엇을 근거로 그려졌는지, 특히 추정이 섞인 부분을 밝힌다.
+/// 그림만 보고 '이게 실제 모습'이라고 읽히면 곤란하기 때문이다.
+String _diagramNote(Locomotive l, LocoShape shape) {
+  String trim(String s) => s.endsWith('.') ? s.substring(0, s.length - 1) : s;
+  final parts = <String>['차륜 배치와 생김새를 줄여 그린 도식이에요'];
+  if (shape.note.isNotEmpty) parts.add('${shape.nameKo}: ${trim(shape.note)}');
+  if (l.tenderAxles == null && l.effectiveTenderAxles > 0) {
+    parts.add('탄수차는 크기로 어림한 모양이에요');
+  }
+  return '${parts.join('. ')}.';
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""tools/references.py 의 정리본 `참고문헌.md` 를 만든다 (프로젝트 문서용).
+"""참고문헌 정리본 `참고문헌.md` 를 만든다 (프로젝트 문서용).
+
+종합·나라별 문헌은 tools/references.py, 기관차별 '더 읽을거리'는 자료조사 원고(tools/manuscript/entries.json)에서 온다.
 
     python3 tools/export_references_md.py > /tmp/참고문헌.md
 
@@ -12,7 +14,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "assets", "data")
 
-KIND = {"book": "단행본", "article": "논문·기사", "thesis": "학위논문", "official": "공식 자료", "catalog": "소장품 기록"}
+KIND = {"book": "단행본", "article": "논문·기사", "journal": "학술지 논문", "thesis": "학위논문", "official": "공식 자료",
+        "catalog": "소장품 기록", "report": "보고서", "web": "웹 문서"}
 
 
 def cite(r):
@@ -37,7 +40,7 @@ def cell(s):
 def table(refs):
     out = ["| 구분 | 언어 | 서지 | 내용 | 확인 |", "|---|---|---|---|---|"]
     for r in refs:
-        out.append(f"| {KIND.get(r['kind'], r['kind'])} | {(r.get('lang') or '').upper()} | {cell(cite(r))} | {cell(r.get('note'))} | {cell(via(r))} |")
+        out.append(f"| {KIND.get(r['kind'], r['kind'])} | {(r.get('lang') or '').upper()} | {cell(cite(r))} | {cell(r.get('note') or r.get('noteKo'))} | {cell(via(r))} |")
     return "\n".join(out)
 
 
@@ -48,15 +51,15 @@ def main():
         c = json.load(f)
     locos = d["locomotives"]
     general = d.get("references") or d.get("generalReferences") or []
-    n_loco = sum(1 for l in locos if l.get("references"))
+    n_loco = sum(1 for l in locos if l.get("furtherReading"))
     n_country = sum(len(ct.get("references") or []) for ct in c["countries"])
-    n_total = len(general) + n_country + sum(len(l.get("references") or []) for l in locos)
+    n_total = len(general) + n_country + sum(len(l.get("furtherReading") or []) for l in locos)
 
     out = []
     out.append("# Steam Atlas — 참고문헌 (서적·논문·공식 자료)\n")
-    out.append(f"2026-09-23 기준(0.1.0). `steam_atlas/tools/references.py` 의 정리본이며 앱 상세 화면 '참고문헌' 섹션과 같은 내용이다 — "
+    out.append(f"원고 {d.get('manuscript', {}).get('generated', '')} 기준. 종합·나라별은 `steam_atlas/tools/references.py`, 기관차별은 자료조사 원고의 '더 읽을거리'다 — "
                f"종합 {len(general)} · 국가별 {n_country} · 기관차별 {n_loco}량(항목 {n_total}건, 같은 책이 여러 량에 걸리면 각각 셈). "
-               "웹 페이지 출처(위키·박물관 웹)는 `고증-대조-기록.md` 에 따로 있다. 이 문서는 `tools/export_references_md.py` 가 만든다.\n")
+               "항목 글에 번호로 단 출처(웹 페이지·잡지·공문서)는 원고의 출처 목록에 있다. 이 문서는 `tools/export_references_md.py` 가 만든다.\n")
     out.append("**원칙**")
     out.append("- 현지어 자료 우선: 한국(철도청·국가유산청·조선총독부 사서·철도차량기술검정단), 일본(国鉄·NDL·文化庁), 독일(EK/transpress), 프랑스(Chapelon·La Vie du Rail·CNRS), "
                "폴란드(WKŁ·Problemy Kolejnictwa), 러시아(Раков), 중국(中国铁道出版社), 남아공(Holland/Wardale) …")
@@ -72,14 +75,14 @@ def main():
         out.append(f"\n## {ct['nameKo']}\n")
         out.append("### 이 나라 증기기관차 전반\n")
         out.append(table(ct.get("references") or []))
-        mine = [l for l in locos if l["countryCode"] == ct["code"] and l.get("references")]
+        mine = [l for l in locos if l["countryCode"] == ct["code"] and l.get("furtherReading")]
         if mine:
-            out.append("\n### 기관차별\n")
+            out.append("\n### 기관차별 (더 읽을거리)\n")
             for l in mine:
                 out.append(f"**{l['nameKo']}** (`{l['id']}`)\n")
-                out.append(table(l["references"]))
+                out.append(table(l["furtherReading"]))
                 out.append("")
-        missing = [l for l in locos if l["countryCode"] == ct["code"] and not l.get("references")]
+        missing = [l for l in locos if l["countryCode"] == ct["code"] and not l.get("furtherReading")]
         if missing:
             out.append("형식 문헌 없음(국가 표준서로 갈음): " + ", ".join(f"{l['nameKo']}(`{l['id']}`)" for l in missing) + "\n")
 

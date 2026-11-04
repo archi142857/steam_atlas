@@ -4,8 +4,10 @@ Copyright (c) 2026 이영표 (LEE YOUNGPYO, github.com/Archi142857)
 
 적용 범위
   - assets/data/locomotives.json, assets/data/countries.json 의 편집 저작물 —
-    기관차 선정·배열, 한국어 요약(summary)·하이라이트(highlights)·별명·태그·위치 설명
-  - tools/build_seed.py 의 LOCOS 초안 본문, tools/verified.py 의 대조 설명(_why / _why_2),
+    기관차 선정·배열, 한영 설명 글(뜻풀이·본문·연혁), 제원 주석, 위치 설명, 별명·태그,
+    시대·나라·생김새 설명, 출처 목록과 더 읽을거리의 정리·메모
+  - tools/manuscript/entries.json (자료조사 원고, 위 설명 글의 원본)
+  - tools/build_seed.py 의 LOCOS 초안 본문, tools/verified.py 의 대조 설명(_why / _why_2 / _whyBy),
     tools/references.py 의 참고문헌 정리와 주석(note)
   - preview/steam-atlas-preview.html 에 인라인된 위 데이터
 
@@ -19,7 +21,7 @@ Copyright (c) 2026 이영표 (LEE YOUNGPYO, github.com/Archi142857)
   "Steam Atlas 데이터" © 2026 이영표, CC BY-SA 4.0 — https://github.com/Archi142857
 
 이 데이터를 만들 때 위키백과(CC BY-SA 4.0) 등 공개 자료의 사실을 참고했다. 출처는 각 항목의
-sources 와 tools/verified.py 의 _src 에 적혀 있다.
+sources(번호 붙은 출처 목록)와 tools/verified.py 의 _src 에 적혀 있다.
 
 아래는 CC BY-SA 4.0 법률 문서 전문이다 (https://creativecommons.org/licenses/by-sa/4.0/legalcode).
 

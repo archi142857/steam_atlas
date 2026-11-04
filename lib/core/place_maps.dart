@@ -49,10 +49,10 @@ class PlaceMaps {
       'https://www.google.com/maps/search/?api=1&query='
       '${Uri.encodeComponent(loc.query ?? '${loc.lat},${loc.lon}')}');
 
-  /// '지금 있는 곳' 탭.
+  /// '지금 있는 곳' 탭. 좌표가 없는 위치('러시아 각지')는 열 곳이 없으므로 아무것도 하지 않는다.
   static Future<void> open(BuildContext context, Locomotive loco) async {
     final loc = loco.location;
-    if (loc == null) return;
+    if (loc == null || !loc.hasPoint) return;
     final messenger = ScaffoldMessenger.of(context);
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -87,18 +87,18 @@ class PlaceMaps {
       ClipboardData(text: '${loc.lat}, ${loc.lon} (${loc.name})'),
     );
     messenger.showSnackBar(
-      const SnackBar(content: Text('지도 앱을 열지 못해 좌표를 복사했습니다')),
+      const SnackBar(content: Text('지도 앱을 열지 못해 좌표를 복사했어요')),
     );
   }
 
   /// 좌표만 복사 (길게 누르기).
   static Future<void> copyCoordinates(BuildContext context, Locomotive loco) async {
     final loc = loco.location;
-    if (loc == null) return;
+    if (loc == null || !loc.hasPoint) return;
     final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: '${loc.lat}, ${loc.lon}'));
     messenger.showSnackBar(
-      SnackBar(content: Text('좌표를 복사했습니다 — ${loc.lat}, ${loc.lon}')),
+      SnackBar(content: Text('좌표를 복사했어요: ${loc.lat}, ${loc.lon}')),
     );
   }
 }

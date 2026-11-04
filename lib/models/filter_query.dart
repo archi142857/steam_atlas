@@ -3,7 +3,8 @@ import 'locomotive.dart';
 /// 정렬 기준.
 enum SortBy {
   year, // 제작연도
-  speed, // 최고속도
+  speed, // 최고속도 (설계·허용)
+  recordSpeed, // 기록 속도 (시험·운행 중)
   power, // 견인력
   weight, // 중량
   name; // 이름(가나다)
@@ -11,6 +12,7 @@ enum SortBy {
   String get labelKo => switch (this) {
         SortBy.year => '제작연도',
         SortBy.speed => '최고속도',
+        SortBy.recordSpeed => '기록 속도',
         SortBy.power => '견인력',
         SortBy.weight => '중량',
         SortBy.name => '이름',

@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -248,7 +246,8 @@ class _TimelineTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              '${loco.wheel.whyte} · ${loco.classDesignation}',
+                              [loco.wheel.whyte, if (loco.classDesignation != null) loco.classDesignation!]
+                                  .join(' · '),
                               style: TextStyle(
                                   fontSize: 11.5, color: scheme.onSurfaceVariant),
                               overflow: TextOverflow.ellipsis,
@@ -256,14 +255,15 @@ class _TimelineTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (loco.highlights.isNotEmpty) ...[
+                      // 뜻풀이 한 줄(자료조사 원고). 예전의 '하이라이트'를 대신한다.
+                      if (loco.gloss.ko.isNotEmpty) ...[
                         const SizedBox(height: 5),
                         Text(
-                          '· ${loco.highlights.first}',
+                          loco.gloss.ko,
                           style: TextStyle(
                             fontSize: 11.5,
                             height: 1.4,
-                            color: scheme.primary,
+                            color: scheme.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

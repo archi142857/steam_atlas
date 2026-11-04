@@ -1,7 +1,7 @@
 name: steam_atlas
 description: "Steam Atlas — 전 세계 증기기관차 아카이브"
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+2
 
 # Color.withValues / CardThemeData 를 쓰므로 Flutter 3.32 이상 권장
 environment:

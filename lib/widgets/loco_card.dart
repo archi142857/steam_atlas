@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 import '../core/format.dart';
@@ -84,7 +82,8 @@ class LocoCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${loco.classDesignation} · ${loco.builtLabel}',
+                          [if (loco.classDesignation != null) loco.classDesignation!, loco.builtLabel]
+                              .join(' · '),
                           style: TextStyle(
                             fontSize: 12,
                             color: scheme.onSurfaceVariant,
@@ -149,8 +148,11 @@ class LocoCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  _MiniStat(
-                      label: '최고속도', value: Fmt.speed(loco.specs.topSpeedKmh)),
+                  // 설계 최고속도가 없고 기록 속도만 있으면(맬러드 등) 그것을 이름을 바꿔 보여 준다
+                  if (loco.specs.topSpeedKmh == null && loco.specs.recordSpeedKmh != null)
+                    _MiniStat(label: '기록 속도', value: Fmt.speed(loco.specs.recordSpeedKmh))
+                  else
+                    _MiniStat(label: '최고속도', value: Fmt.speed(loco.specs.topSpeedKmh)),
                   const SizedBox(width: 12),
                   _MiniStat(
                       label: '견인력', value: Fmt.te(loco.specs.tractiveEffortKn)),

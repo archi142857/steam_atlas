@@ -3,7 +3,7 @@
 
     python3 tools/export_verified_md.py > /tmp/고증-대조-기록.md
 
-1차 대조본(VERIFIED)·재대조본(RECHECK)·2차 대조(`_why_2`)를 그대로 옮긴다. 손으로 고치지 말고 verified.py 를 고친 뒤 다시 생성할 것.
+1차 대조본(VERIFIED)·재대조본(RECHECK)·2차 대조(`_why_2`)·원고 반영(RESEARCH)을 그대로 옮긴다. 손으로 고치지 말고 verified.py 를 고친 뒤 다시 생성할 것.
 """
 import importlib.util
 import json
@@ -49,9 +49,10 @@ def main():
     n_all = len(data["locomotives"])
     out = []
     out.append("# Steam Atlas — 고증 대조 기록 (tools/verified.py 요약)\n")
-    out.append(f"2026-09-12 1차 대조, 2026-09-16~17 재대조 + 2차 대조 10량. {n_all}량 전부 웹 출처와 대조했다. "
+    out.append(f"2026-09-12 1차 대조, 2026-09-16~17 재대조 + 2차 대조 10량, 2026-10-23 자료조사 원고 반영. {n_all}량 전부 출처와 대조했다. "
                f"✅ = `verified=true`({n_ver}량), ⚠️ = 출처 충돌·자료 부족으로 미확정({n_all - n_ver}량).")
-    out.append("원본은 `steam_atlas/tools/verified.py` (`VERIFIED` 1차 대조본 + `RECHECK` 재대조본, 각각 `_why`/`_src` 포함; 2차 대조는 `_why_2`). "
+    out.append("원본은 `steam_atlas/tools/verified.py` (`VERIFIED` 1차 대조본 + `RECHECK` 재대조본 + `RESEARCH` 원고 반영, 각각 `_why`/`_src` 포함; "
+               "2차 대조는 `_why_2`, 원고 반영은 칸마다 `_whyBy`). 이름·설명 글·제원 주석·위치·출처는 원고(`tools/manuscript/entries.json`)가 정한다. "
                "서적·논문·공식 자료는 `참고문헌.md` 에 따로 있다. 이 문서는 `tools/export_verified_md.py` 가 만든다 — 손으로 고치지 말 것.\n")
     out.append("규칙: 초안(`build_seed.py`)의 값은 추정일 수 있다. 출처로 확인한 값만 대조본에 적고, 확인 불가면 `None`(앱에서 `—`)으로 비운다. 추론으로 값을 고르지 않는다.")
     out.append("**단위도 본다** — long ton·lbf·kgf/cm²·psi 는 반드시 t·kN·bar 로 환산하고, 중량에는 기준(기관차 단독 / +탄수차)을 붙인다. "
@@ -97,6 +98,24 @@ def main():
     cr = v.RECHECK.get("fr-crampton")
     if cr and not cr.get("_why_2"):
         out.append(f"| `fr-crampton` | {names.get('fr-crampton', '')} | {'✅' if cr.get('_verified') else '⚠️'} | (2차에 새로 넣음) {_cell(cr.get('_why'))} | {_src(cr)} |")
+
+    # 자료조사 원고 반영
+    research = getattr(v, "RESEARCH", {})
+    out.append(f"\n## 자료조사 원고 반영 (2026-10-23) — {len(research)}량, "
+               f"{sum(len([k for k in e if not k.startswith('_')]) for e in research.values())}칸\n")
+    out.append("자료조사 세션이 1차 자료·현지어 자료·당대 잡지 스캔본까지 다시 대조한 원고(`tools/manuscript/entries.json`)와 "
+               "정정안(576건)에서 채택한 값. 표제란·궤간·기존 제원은 원고와 같게 맞췄고(빌드 때 대조), "
+               "원고에 없는 앱 칸(제조사·운영·설계·형식 기호·UIC·탄수차 축수·용도·생김새·태그)은 정정안에서 고른 것만 넣었다. "
+               "최고속도는 설계·허용 값만 두고, 시험·운행 기록은 새 칸 `recordSpeedKmh`(기록 속도)로 옮겼다.\n")
+    out.append("| id | 이름 | 칸 | 값 | 이유 |")
+    out.append("|---|---|---|---|---|")
+    for lid, e in research.items():
+        why_by = e.get("_whyBy") or {}
+        for k, val in e.items():
+            if k.startswith("_"):
+                continue
+            shown = "비움" if val is None else (", ".join(val) if isinstance(val, list) else val)
+            out.append(f"| `{lid}` | {names.get(lid, '')} | `{k}` | {_cell(str(shown))} | {_cell(why_by.get(k))} |")
 
     # 미확정
     left = [l for l in data["locomotives"] if not l.get("verified")]

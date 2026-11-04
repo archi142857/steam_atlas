@@ -32,6 +32,7 @@ LocomotiveDataset _loadFromDisk() {
     shapes: ((locoJson['shapes'] as List?) ?? const [])
         .map((e) => LocoShape.fromJson(e as Map<String, dynamic>))
         .toList(),
+    generalReferences: Reference.listFrom(locoJson['references']),
     countries: (countryJson['countries'] as List)
         .map((e) => Country.fromJson(e as Map<String, dynamic>))
         .toList(),
@@ -104,11 +105,15 @@ void main() {
 
   test('별명은 이름 칸에 섞여 들어가지 않는다 (공인 형식명 유지)', () {
     for (final l in repo.all) {
-      final n = l.nickname;
-      if (n == null) continue;
-      expect(l.nameKo.contains(n), isFalse, reason: '${l.id}: nameKo 에 별명이 들어감');
-      expect(l.nameEn.contains(n), isFalse, reason: '${l.id}: nameEn 에 별명이 들어감');
+      final ko = l.nicknameKo, en = l.nicknameEn;
+      if (ko != null) expect(l.nameKo.contains(ko), isFalse, reason: '${l.id}: nameKo 에 별명이 들어감');
+      if (en != null) expect(l.nameEn.contains(en), isFalse, reason: '${l.id}: nameEn 에 별명이 들어감');
+      // 영어 이름에는 괄호를 쓰지 않고, 나라 없이 'Class …'로 시작하지 않는다 (원고 규칙)
+      expect(l.nameEn.contains('('), isFalse, reason: '${l.id}: ${l.nameEn}');
+      expect(l.nameEn.startsWith('Class '), isFalse, reason: '${l.id}: ${l.nameEn}');
     }
+    expect(repo.byId('jp-d51')!.nicknameKo, '데고이치');
+    expect(repo.byId('de-drg-52')!.nicknameEn, 'Kriegslok');
   });
 
   test('중량 기준(weightBasis)이 있으면 라벨이 붙고, 값이 없으면 기준도 없다', () {
@@ -117,8 +122,119 @@ void main() {
         expect(l.specs.weightBasis, isNull, reason: '${l.id}: 중량이 없는데 기준만 있음');
       }
     }
-    expect(WeightBasis.parse('locoAndTender')?.labelKo, '기관차+탄수차');
+    expect(WeightBasis.parse('locoAndTender')?.labelKo, '탄수차 포함');
+    expect(WeightBasis.parse('loco')?.label(Lang.en), 'Locomotive only');
     expect(WeightBasis.parse('nonsense'), isNull);
+  });
+
+  test('원고: 모든 항목에 뜻풀이·본문이 한영으로 있고, 출처 번호가 목록과 맞는다', () {
+    for (final l in repo.all) {
+      expect(l.gloss.ko, isNotEmpty, reason: '${l.id}: 뜻풀이(ko)');
+      expect(l.gloss.en, isNotEmpty, reason: '${l.id}: 뜻풀이(en)');
+      expect(l.body, isNotEmpty, reason: '${l.id}: 본문');
+      expect(l.sources, isNotEmpty, reason: '${l.id}: 출처');
+      // 출처 목록은 1부터 이어진다
+      expect(l.sources.map((s) => s.n).toList(), [for (var i = 1; i <= l.sources.length; i++) i],
+          reason: '${l.id}: 출처 번호');
+      // 글·제원·연혁·위치에 쓴 번호는 모두 목록에 있다
+      final used = <int>{
+        ...l.gloss.src,
+        for (final b in l.body) ...b.src,
+        for (final n in l.specNotes.values) ...n.src,
+        for (final h in l.history) ...h.src,
+        ...?l.location?.src,
+        ...?l.quantityNote?.src,
+      };
+      for (final n in used) {
+        expect(l.source(n), isNotNull, reason: '${l.id}: 출처 $n 이 목록에 없음');
+      }
+      for (final b in l.body) {
+        expect(b.src, isNotEmpty, reason: '${l.id}: 출처 없는 본문 문장 "${b.ko}"');
+      }
+      for (final h in l.history) {
+        expect(h.year, isNotNull, reason: '${l.id}: 연혁 날짜 ${h.date}');
+      }
+    }
+  });
+
+  test('원고: 제원 주석은 값이 있는 칸에만 있고, 값이 있으면 주석(출처)이 있다', () {
+    for (final l in repo.all) {
+      final s = l.specs;
+      final values = <String, Object?>{
+        'gaugeMm': l.gaugeMm,
+        'driverDiameterMm': s.driverDiameterMm,
+        'leadingWheelDiameterMm': s.leadingWheelDiameterMm,
+        'trailingWheelDiameterMm': s.trailingWheelDiameterMm,
+        'cylinderSize': s.cylinderSize,
+        'cylinders': s.cylinders,
+        'boilerPressureBar': s.boilerPressureBar,
+        'wheelbaseMm': s.wheelbaseMm,
+        'waterL': s.waterL,
+        'topSpeedKmh': s.topSpeedKmh,
+        'recordSpeedKmh': s.recordSpeedKmh,
+        'tractiveEffortKn': s.tractiveEffortKn,
+        'powerKw': s.powerKw,
+        'weightT': s.weightT,
+        'lengthMm': s.lengthMm,
+      };
+      for (final k in l.specNotes.keys) {
+        expect(values.containsKey(k), isTrue, reason: '${l.id}: 모르는 제원 칸 $k');
+        expect(values[k], isNotNull, reason: '${l.id}: 값 없는 $k 에 주석');
+        expect(l.specNotes[k]!.src, isNotEmpty, reason: '${l.id}: $k 출처 번호');
+      }
+      for (final e in values.entries) {
+        if (e.key == 'gaugeMm') continue; // 궤간은 원고에 없을 수도 있다(14량)
+        if (e.value != null) {
+          expect(l.specNotes.containsKey(e.key), isTrue, reason: '${l.id}: ${e.key} 값에 출처가 없음');
+        }
+      }
+    }
+  });
+
+  test('최고속도와 기록 속도는 따로 — 맬러드의 201.2 km/h 는 기록 속도', () {
+    final mallard = repo.byId('gb-lner-a4-mallard')!;
+    expect(mallard.specs.topSpeedKmh, isNull);
+    expect(mallard.specs.recordSpeedKmh, 201.2);
+    expect(repo.all.where((l) => l.specs.recordSpeedKmh != null).length, 16);
+    for (final l in repo.all) {
+      final t = l.specs.topSpeedKmh, r = l.specs.recordSpeedKmh;
+      if (t != null && r != null) expect(r, greaterThanOrEqualTo(t), reason: l.id);
+    }
+  });
+
+  test('표제란 수량: 수량 문구가 있으면 숫자 대신 그것을 쓴다', () {
+    expect(repo.byId('de-drg-52')!.quantityLabel(Lang.ko), '7,000량 이상');
+    expect(repo.byId('de-drg-52')!.quantityLabel(Lang.en), 'More than 7,000');
+    expect(repo.byId('kr-moga')!.quantityLabel(Lang.ko), '4량');
+    expect(repo.byId('jp-d51')!.quantityLabel(Lang.ko), '1,115량');
+    expect(repo.all.where((l) => l.quantityNote != null).length, 5);
+  });
+
+  test('연혁 날짜 표기', () {
+    const day = HistoryEvent(date: '1899-09-18', ko: '', en: '');
+    const month = HistoryEvent(date: '1897-12', ko: '', en: '');
+    const year = HistoryEvent(date: '1918', ko: '', en: '');
+    const approx = HistoryEvent(date: '1918', ko: '', en: '', approx: true);
+    const approxMonth = HistoryEvent(date: '1943-07', ko: '', en: '', approx: true);
+    const approxDay = HistoryEvent(date: '1825-09-18', ko: '', en: '', approx: true);
+    expect(day.dateLabel(Lang.ko), '1899. 9. 18.');
+    expect(month.dateLabel(Lang.ko), '1897. 12.');
+    expect(year.dateLabel(Lang.ko), '1918');
+    expect(approx.dateLabel(Lang.ko), '1918년경');
+    expect(approxMonth.dateLabel(Lang.ko), '1943년 7월경');
+    expect(approxDay.dateLabel(Lang.ko), '1825년 9월 18일경');
+    expect(day.dateLabel(Lang.en), 'Sep 18, 1899');
+    expect(approx.dateLabel(Lang.en), 'c. 1918');
+    expect(approxMonth.dateLabel(Lang.en), 'c. Jul 1943');
+  });
+
+  test('더 읽을거리: 장단역 증기기관차 논문은 그 기관차와 무관한 형식에 붙지 않는다', () {
+    const jangdan = '근대문화유산 경의선장단역증기기관차의 보존에 관한 연구';
+    for (final id in ['kr-moga', 'kr-teou', 'kr-hyeogi']) {
+      expect(repo.byId(id)!.furtherReading.any((r) => r.title.contains(jangdan)), isFalse, reason: id);
+    }
+    // 한국 보존 증기기관차 일반의 참고로는 남긴다
+    expect(repo.byId('kr-pashi5')!.furtherReading.any((r) => r.title.contains(jangdan)), isTrue);
   });
 
   test('참고문헌: 서지 필수 항목이 채워져 있고 모든 나라에 표준 문헌이 있다', () {
@@ -141,9 +257,17 @@ void main() {
         check(r, c.code);
       }
     }
+    // 기관차별 '더 읽을거리'는 원고에서 온다. 원고가 새로 찾은 문헌은 서지 확인 경로(via)가 없고
+    // 출판사가 비어 있는 것도 있어서 제목·종류·연도만 본다.
+    const readingKinds = {...kinds, 'journal', 'report', 'web'};
     for (final l in repo.all) {
-      for (final r in l.references) {
-        check(r, l.id);
+      for (final r in l.furtherReading) {
+        expect(r.title, isNotEmpty, reason: '${l.id}: 제목 없음');
+        expect(readingKinds, contains(r.kind), reason: '${l.id}: kind ${r.kind}');
+        if (r.year != null) {
+          expect(r.year, inInclusiveRange(1800, 2030), reason: '${l.id}: 연도 ${r.year}');
+        }
+        expect(r.note, isNotEmpty, reason: '${l.id}: 메모 없음 (${r.title})');
       }
     }
     expect(repo.generalReferences, isNotEmpty);
@@ -216,11 +340,11 @@ void main() {
     expect(repo.livery('jnr-black')!.accent, isNull);
   });
 
-  test('정렬: 최고속도 내림차순 1위는 맬러드(202.8 km/h)', () {
-    final sorted = repo.query(
-      const FilterQuery(sortBy: SortBy.speed, descending: true),
-    );
-    expect(sorted.first.specs.topSpeedKmh, 202.8);
+  test('정렬: 최고속도(설계 값) 1위는 193 km/h, 기록 속도 1위는 맬러드(201.2 km/h)', () {
+    final byTop = repo.query(const FilterQuery(sortBy: SortBy.speed, descending: true));
+    expect(byTop.first.specs.topSpeedKmh, 193);
+    final byRecord = repo.query(const FilterQuery(sortBy: SortBy.recordSpeed, descending: true));
+    expect(byRecord.first.id, 'gb-lner-a4-mallard');
   });
 
   test('값이 없는 항목은 정렬에서 뒤로 밀린다 — 오름차순·내림차순 모두', () {
@@ -247,10 +371,17 @@ void main() {
   });
 
   test('지도에 찍을 좌표가 유효 범위 안에 있다', () {
-    for (final l in repo.withLocation(const FilterQuery())) {
-      expect(l.location!.lat, inInclusiveRange(-90, 90));
-      expect(l.location!.lon, inInclusiveRange(-180, 180));
+    final located = repo.withLocation(const FilterQuery());
+    for (final l in located) {
+      expect(l.location!.hasPoint, isTrue);
+      expect(l.location!.lat!, inInclusiveRange(-90, 90));
+      expect(l.location!.lon!, inInclusiveRange(-180, 180));
     }
+    // 좌표 없는 위치('러시아 각지')는 항목 화면에만 나오고 지도에는 찍지 않는다
+    final l = repo.byId('ru-class-l')!;
+    expect(l.location, isNotNull);
+    expect(l.location!.hasPoint, isFalse);
+    expect(located.map((x) => x.id), isNot(contains('ru-class-l')));
   });
 
   test('현존 없음(scrapped)인데 보존 위치가 있으면 안 된다', () {

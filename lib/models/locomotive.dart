@@ -1,7 +1,8 @@
 /// 증기기관차 도메인 모델.
 ///
-/// assets/data/locomotives.json 의 스키마(schemaVersion 1)와 1:1로 대응한다.
-/// 데이터 추가는 tools/build_seed.py 에서 하고 JSON을 다시 생성할 것.
+/// assets/data/locomotives.json 의 스키마(schemaVersion 2)와 1:1로 대응한다.
+/// 데이터는 tools/build_seed.py 가 만든다 — 초안 + 출처 대조본(tools/verified.py) + 자료조사 원고
+/// (tools/manuscript/entries.json). JSON 을 손으로 고치지 말 것.
 library;
 
 import 'dart:ui' show Brightness, Color;
@@ -10,15 +11,182 @@ int? _i(dynamic v) => v == null ? null : (v as num).toInt();
 double? _d(dynamic v) => v == null ? null : (v as num).toDouble();
 List<String> _s(dynamic v) =>
     v == null ? const [] : (v as List).map((e) => e.toString()).toList();
+List<int> _ints(dynamic v) =>
+    v == null ? const [] : (v as List).map((e) => (e as num).toInt()).toList();
+
+/// 화면 언어. 데이터(이름·설명 글·제원 주석·출처)는 한국어와 영어가 짝으로 들어 있다.
+/// 화면 문구는 아직 한국어뿐이다 — 영어 화면은 새 디자인을 옮길 때 붙인다.
+enum Lang { ko, en }
+
+/// 한영 짝 글.
+class Bilingual {
+  const Bilingual(this.ko, this.en);
+  final String ko;
+  final String en;
+
+  /// 영어가 비어 있으면 한국어로 대신한다.
+  String of(Lang lang) => lang == Lang.en && en.isNotEmpty ? en : ko;
+
+  static Bilingual? fromJson(dynamic j) {
+    if (j is! Map) return null;
+    return Bilingual(j['ko'] as String? ?? '', j['en'] as String? ?? '');
+  }
+}
+
+/// 출처 번호가 붙은 한영 문장 — 뜻풀이, 본문 한 문장, 표제란 수량 문구.
+/// [src] 는 그 항목의 출처 목록([Locomotive.sources]) 번호다.
+class SourcedText {
+  const SourcedText({required this.ko, required this.en, this.src = const []});
+  final String ko;
+  final String en;
+  final List<int> src;
+
+  String of(Lang lang) => lang == Lang.en && en.isNotEmpty ? en : ko;
+
+  factory SourcedText.fromJson(Map<String, dynamic> j) => SourcedText(
+        ko: j['ko'] as String? ?? '',
+        en: j['en'] as String? ?? '',
+        src: _ints(j['src']),
+      );
+
+  static SourcedText? maybe(dynamic j) =>
+      j is Map<String, dynamic> ? SourcedText.fromJson(j) : null;
+
+  static List<SourcedText> listFrom(dynamic v) => ((v as List?) ?? const [])
+      .map((e) => SourcedText.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
+
+/// 연혁 한 줄. 날짜는 "1899", "1899-09", "1899-09-18" 중 하나.
+class HistoryEvent {
+  const HistoryEvent({
+    required this.date,
+    required this.ko,
+    required this.en,
+    this.approx = false,
+    this.src = const [],
+  });
+
+  final String date;
+
+  /// 날짜가 어림값인가("1918년경").
+  final bool approx;
+  final String ko;
+  final String en;
+  final List<int> src;
+
+  factory HistoryEvent.fromJson(Map<String, dynamic> j) => HistoryEvent(
+        date: j['date'] as String,
+        approx: j['approx'] as bool? ?? false,
+        ko: j['ko'] as String? ?? '',
+        en: j['en'] as String? ?? '',
+        src: _ints(j['src']),
+      );
+
+  String of(Lang lang) => lang == Lang.en && en.isNotEmpty ? en : ko;
+
+  List<int?> get _parts {
+    final p = date.split('-');
+    int? at(int i) => i < p.length ? int.tryParse(p[i]) : null;
+    return [at(0), at(1), at(2)];
+  }
+
+  int? get year => _parts[0];
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /// 날짜 표기 — 한국어 "1899. 9. 18." / "1918년경" / "1943년 7월경", 영어 "Sep 18, 1899" / "c. 1918".
+  String dateLabel(Lang lang) {
+    final [y, m, d] = _parts;
+    if (lang == Lang.en) {
+      final t = [
+        if (m != null) _months[m - 1],
+        if (d != null) '$d,',
+        '$y',
+      ].join(' ');
+      return approx ? 'c. $t' : t;
+    }
+    // 어림값은 '경'을 맨 뒤에 — "1943년 7월경", "1825년 9월 18일경".
+    if (approx) {
+      if (m == null) return '$y년경';
+      return d == null ? '$y년 $m월경' : '$y년 $m월 $d일경';
+    }
+    if (m == null) return '$y';
+    return '$y. $m.${d != null ? ' $d.' : ''}';
+  }
+}
+
+/// 제원 한 칸의 주석 — 원래 단위 표기, 짧은 단서, 출처 번호.
+class SpecNote {
+  const SpecNote({this.orig, this.noteKo, this.noteEn, this.src = const []});
+
+  /// 출처에 적힌 원래 단위의 값("42 in", "140 psi"). 출처가 처음부터 미터법이면 null.
+  final String? orig;
+  final String? noteKo;
+  final String? noteEn;
+  final List<int> src;
+
+  String? note(Lang lang) =>
+      lang == Lang.en && (noteEn?.isNotEmpty ?? false) ? noteEn : noteKo;
+
+  factory SpecNote.fromJson(Map<String, dynamic> j) => SpecNote(
+        orig: j['orig'] as String?,
+        noteKo: j['noteKo'] as String?,
+        noteEn: j['noteEn'] as String?,
+        src: _ints(j['src']),
+      );
+}
+
+/// 항목 글에 번호로 단 출처 한 건.
+class SourceRef {
+  const SourceRef({
+    required this.n,
+    required this.ko,
+    required this.en,
+    this.kind,
+    this.tier,
+    this.lang,
+    this.url,
+  });
+
+  final int n;
+
+  /// 출처 표기(한국어 / 영어).
+  final String ko;
+  final String en;
+
+  /// book | journal | newspaper | web | museum … (원고 그대로)
+  final String? kind;
+
+  /// primary | secondary | encyclopedia | enthusiast
+  final String? tier;
+  final String? lang;
+  final String? url;
+
+  String of(Lang lang) => lang == Lang.en && en.isNotEmpty ? en : ko;
+
+  factory SourceRef.fromJson(Map<String, dynamic> j) => SourceRef(
+        n: (j['n'] as num).toInt(),
+        ko: j['ko'] as String? ?? '',
+        en: j['en'] as String? ?? '',
+        kind: j['kind'] as String?,
+        tier: j['tier'] as String?,
+        lang: j['lang'] as String?,
+        url: j['url'] as String?,
+      );
+}
 
 /// 보존/운행 상태.
 enum LocoStatus {
-  operational, // 운행 중 (본선·관광열차 견인)
-  operable, // 동태보존 (움직일 수 있음)
-  static_, // 정태보존 (전시)
+  operational, // 운행 (본선·관광열차 견인)
+  operable, // 동태 보존 (움직일 수 있음)
+  static_, // 정태 보존 (전시)
   restoration, // 복원 중
-  scrapped, // 현존 개체 없음
-  replica; // 복제품만 존재
+  scrapped, // 남은 차량 없음
+  replica; // 복제품만 남음
 
   static LocoStatus parse(String? raw) => switch (raw) {
         'operational' => LocoStatus.operational,
@@ -30,13 +198,24 @@ enum LocoStatus {
       };
 
   String get labelKo => switch (this) {
-        LocoStatus.operational => '운행 중',
-        LocoStatus.operable => '동태보존',
-        LocoStatus.static_ => '정태보존',
+        LocoStatus.operational => '운행',
+        LocoStatus.operable => '동태 보존',
+        LocoStatus.static_ => '정태 보존',
         LocoStatus.restoration => '복원 중',
-        LocoStatus.scrapped => '현존 없음',
+        LocoStatus.scrapped => '해체',
         LocoStatus.replica => '복제품',
       };
+
+  String get labelEn => switch (this) {
+        LocoStatus.operational => 'Operational',
+        LocoStatus.operable => 'Operable',
+        LocoStatus.static_ => 'Static display',
+        LocoStatus.restoration => 'Under restoration',
+        LocoStatus.scrapped => 'Scrapped',
+        LocoStatus.replica => 'Replica',
+      };
+
+  String label(Lang lang) => lang == Lang.en ? labelEn : labelKo;
 
   /// 실제로 증기를 올릴 수 있는 상태인가.
   bool get isAlive => this == LocoStatus.operational || this == LocoStatus.operable;
@@ -45,7 +224,8 @@ enum LocoStatus {
 /// 용도 분류.
 enum ServiceType {
   express, // 급행 여객
-  mixed, // 혼합
+  passenger, // 여객
+  mixed, // 객화 겸용
   freight, // 화물
   tank, // 탱크식·입환
   articulated, // 관절식
@@ -54,6 +234,7 @@ enum ServiceType {
 
   static ServiceType parse(String? raw) => switch (raw) {
         'express' => ServiceType.express,
+        'passenger' => ServiceType.passenger,
         'freight' => ServiceType.freight,
         'tank' => ServiceType.tank,
         'articulated' => ServiceType.articulated,
@@ -64,7 +245,8 @@ enum ServiceType {
 
   String get labelKo => switch (this) {
         ServiceType.express => '급행 여객',
-        ServiceType.mixed => '혼합용',
+        ServiceType.passenger => '여객',
+        ServiceType.mixed => '객화 겸용',
         ServiceType.freight => '화물',
         ServiceType.tank => '탱크식',
         ServiceType.articulated => '관절식',
@@ -358,6 +540,7 @@ enum CasingStyle {
 class LocoShape {
   final String id;
   final String nameKo;
+  final String nameEn;
   final ChimneyStyle chimney;
   final CabStyle cab;
   final int domes; // 보일러 위 증기돔·모래돔 수 (0~2)
@@ -365,11 +548,15 @@ class LocoShape {
   final bool lamp; // 앞 전조등
   final bool pilot; // 카우캐처(배장기)
   final CylinderStyle cylinder;
+
+  /// 생김새 설명(한국어 / 영어). 필터의 도움말과 도식 아래 설명에 쓴다.
   final String note;
+  final String noteEn;
 
   const LocoShape({
     required this.id,
     required this.nameKo,
+    this.nameEn = '',
     required this.chimney,
     required this.cab,
     required this.domes,
@@ -378,12 +565,14 @@ class LocoShape {
     required this.pilot,
     required this.cylinder,
     required this.note,
+    this.noteEn = '',
   });
 
   /// 데이터가 없을 때 쓰는 기본형 — 예전 도식과 같은 모습.
   static const fallback = LocoShape(
     id: 'classic',
     nameKo: '표준형',
+    nameEn: 'Standard type',
     chimney: ChimneyStyle.mid,
     cab: CabStyle.full,
     domes: 0,
@@ -397,6 +586,7 @@ class LocoShape {
   factory LocoShape.fromJson(Map<String, dynamic> j) => LocoShape(
         id: j['id'] as String,
         nameKo: j['nameKo'] as String? ?? '',
+        nameEn: j['nameEn'] as String? ?? '',
         chimney: ChimneyStyle.parse(j['chimney'] as String?),
         cab: CabStyle.parse(j['cab'] as String?),
         domes: _i(j['domes']) ?? 0,
@@ -404,20 +594,24 @@ class LocoShape {
         lamp: j['lamp'] as bool? ?? false,
         pilot: j['pilot'] as bool? ?? false,
         cylinder: CylinderStyle.parse(j['cylinder'] as String?),
-        note: j['note'] as String? ?? '',
+        note: (j['noteKo'] ?? j['note']) as String? ?? '',
+        noteEn: j['noteEn'] as String? ?? '',
       );
 
   bool get isStreamlined => casing == CasingStyle.full;
 }
 
-/// 중량이 무엇을 재 것인지. 기관차 단독 중량과 탄수차까지 합친 운전정비중량은
+/// 중량이 무엇을 잰 것인지. 기관차만 잰 중량과 탄수차까지 합친 운전정비중량은
 /// 두 배 가까이 차이가 나므로 숫자만 보여주면 비교가 틀어진다.
 enum WeightBasis {
-  loco('기관차 단독'),
-  locoAndTender('기관차+탄수차');
+  loco('기관차만', 'Locomotive only'),
+  locoAndTender('탄수차 포함', 'With tender');
 
-  const WeightBasis(this.labelKo);
+  const WeightBasis(this.labelKo, this.labelEn);
   final String labelKo;
+  final String labelEn;
+
+  String label(Lang lang) => lang == Lang.en ? labelEn : labelKo;
 
   static WeightBasis? parse(String? v) {
     switch (v) {
@@ -431,7 +625,9 @@ enum WeightBasis {
   }
 }
 
-/// 제원. 값이 없는 항목은 null — UI에서 '—'로 표시한다.
+/// 제원. 값이 없는 항목은 null — 화면에서는 줄을 빼거나 '자료 없음'으로 표시한다.
+///
+/// 원고의 기준: 1차 자료 없이 두 자료가 정면으로 엇갈리는 값은 비운다.
 class LocoSpecs {
   final int? lengthMm;
   final double? weightT;
@@ -443,7 +639,19 @@ class LocoSpecs {
   final int? cylinders;
   final double? tractiveEffortKn;
   final int? powerKw;
+
+  /// 설계·허용 최고 속도만. 시험이나 운행 중에 낸 기록은 [recordSpeedKmh] 에 따로 둔다.
   final double? topSpeedKmh;
+
+  /// 시험·운행 중 기록 속도(맬러드 201.2 km/h 등). 최고속도와 섞지 않는다.
+  final double? recordSpeedKmh;
+  final int? leadingWheelDiameterMm;
+  final int? trailingWheelDiameterMm;
+
+  /// 실린더 지름 × 행정(mm) 표기. 예: "356 × 559"
+  final String? cylinderSize;
+  final int? wheelbaseMm;
+  final int? waterL;
 
   const LocoSpecs({
     this.lengthMm,
@@ -455,6 +663,12 @@ class LocoSpecs {
     this.tractiveEffortKn,
     this.powerKw,
     this.topSpeedKmh,
+    this.recordSpeedKmh,
+    this.leadingWheelDiameterMm,
+    this.trailingWheelDiameterMm,
+    this.cylinderSize,
+    this.wheelbaseMm,
+    this.waterL,
   });
 
   factory LocoSpecs.fromJson(Map<String, dynamic> j) => LocoSpecs(
@@ -467,6 +681,12 @@ class LocoSpecs {
         tractiveEffortKn: _d(j['tractiveEffortKn']),
         powerKw: _i(j['powerKw']),
         topSpeedKmh: _d(j['topSpeedKmh']),
+        recordSpeedKmh: _d(j['recordSpeedKmh']),
+        leadingWheelDiameterMm: _i(j['leadingWheelDiameterMm']),
+        trailingWheelDiameterMm: _i(j['trailingWheelDiameterMm']),
+        cylinderSize: j['cylinderSize'] as String?,
+        wheelbaseMm: _i(j['wheelbaseMm']),
+        waterL: _i(j['waterL']),
       );
 
   /// 채워진 항목 비율 — 데이터 완성도 표시용.
@@ -485,28 +705,53 @@ class LocoSpecs {
   }
 }
 
+/// 지금 있는 곳. 장소명과 단서는 한영 짝이고, 좌표가 없는 곳('러시아 각지')도 있다.
 class LocoLocation {
+  /// 장소명(한국어). 지도 마커 라벨과 지도 앱 라벨에 쓴다.
   final String name;
-  final double lat;
-  final double lon;
+  final String nameEn;
+
+  /// 단서 — 어느 차량이 어떤 상태로 있는지("C57 1 소속. 2026년 10월 3일부터 …").
+  final String? note;
+  final String? noteEn;
+
+  /// 좌표. 특정 장소가 없으면 둘 다 null 이고 지도에 찍지 않는다.
+  final double? lat;
+  final double? lon;
 
   /// 지도 앱에 넘길 검색어 — 그 지도 앱이 알아듣는 시설의 공식 명칭(예: "National Railway Museum York").
   /// 있으면 지도 앱이 실제 장소(주소·사진 포함)를 찾아 보여주고, 없으면 좌표 핀에 [name] 라벨만 붙인다.
-  /// '각지 보존' 처럼 특정 시설이 아닌 위치는 일부러 비워 둔다 — 엉뚱한 장소가 잡히는 것보다 낫다.
   final String? query;
+
+  /// 이 칸의 출처 번호([Locomotive.sources]).
+  final List<int> src;
 
   const LocoLocation({
     required this.name,
-    required this.lat,
-    required this.lon,
+    this.nameEn = '',
+    this.note,
+    this.noteEn,
+    this.lat,
+    this.lon,
     this.query,
+    this.src = const [],
   });
 
+  bool get hasPoint => lat != null && lon != null;
+
+  String nameOf(Lang lang) => lang == Lang.en && nameEn.isNotEmpty ? nameEn : name;
+  String? noteOf(Lang lang) =>
+      lang == Lang.en && (noteEn?.isNotEmpty ?? false) ? noteEn : note;
+
   factory LocoLocation.fromJson(Map<String, dynamic> j) => LocoLocation(
-        name: j['name'] as String,
-        lat: (j['lat'] as num).toDouble(),
-        lon: (j['lon'] as num).toDouble(),
+        name: (j['nameKo'] ?? j['name']) as String,
+        nameEn: j['nameEn'] as String? ?? '',
+        note: j['noteKo'] as String?,
+        noteEn: j['noteEn'] as String?,
+        lat: _d(j['lat']),
+        lon: _d(j['lon']),
         query: j['query'] as String?,
+        src: _ints(j['src']),
       );
 }
 
@@ -515,10 +760,15 @@ class Locomotive {
   final String nameKo;
   final String nameEn;
 
-  /// 별명·애칭(Kriegslok, 티거리, 아름다운 헬레나…). 공인 형식명이 아니므로
+  /// 별명·애칭(데고이치, 티거리, 아름다운 헬레나…). 공인 형식명이 아니므로
   /// [nameKo]/[nameEn] 에는 넣지 않고 여기에만 둔다.
-  final String? nickname;
-  final String classDesignation;
+  final String? nicknameKo;
+  final String? nicknameEn;
+
+  /// 형식 기호. 출처로 뒷받침되는 기호가 없으면 null(라 트로치타).
+  final String? classDesignation;
+
+  /// 대표 차량 번호. 항목이 한 량을 가리킬 때만 있다("C57 1", "4014").
   final String? roadNumber;
   final String countryCode;
   final String eraId;
@@ -528,6 +778,9 @@ class Locomotive {
   final int? builtFrom;
   final int? builtTo;
   final int? quantityBuilt;
+
+  /// 자료마다 수량이 달라 숫자 하나로 쓸 수 없을 때의 표기("7,000량 이상"). 있으면 표제란에 이것을 쓴다.
+  final SourcedText? quantityNote;
   final int? withdrawnYear;
   final Wheel wheel;
 
@@ -544,24 +797,42 @@ class Locomotive {
   final int gaugeMm;
   final ServiceType serviceType;
   final LocoSpecs specs;
+
+  /// 제원이 어느 시점·차량 기준인지("1897년 출고 당시").
+  final Bilingual? specsBasis;
+
+  /// 제원 칸별 주석(원래 단위·단서·출처 번호). 키는 제원 칸 이름이고, 순서가 곧 화면 순서다.
+  /// 궤간은 `gaugeMm` 키로 들어 있다.
+  final Map<String, SpecNote> specNotes;
   final LocoStatus status;
   final int? survivors;
   final LocoLocation? location;
   final bool iconic;
-  final List<String> highlights;
-  final String summary;
-  final List<String> tags;
-  final List<String> sources;
 
-  /// 이 형식·개체를 직접 다루는 서적·논문·공식 자료. 웹 출처는 [sources].
-  final List<Reference> references;
+  /// 뜻풀이 — 명사로 끝나는 한 줄.
+  final SourcedText gloss;
+
+  /// 본문 — '~다' 문장들. 문장마다 출처 번호가 있다.
+  final List<SourcedText> body;
+
+  /// 연혁 — 날짜순.
+  final List<HistoryEvent> history;
+  final List<String> tags;
+  final List<String> tagsEn;
+
+  /// 항목 글에 번호로 단 출처. [SourcedText.src] 등의 번호가 [SourceRef.n] 을 가리킨다.
+  final List<SourceRef> sources;
+
+  /// 더 읽을거리 — 이 형식·개체를 다룬 책·논문·공식 자료.
+  final List<Reference> furtherReading;
   final bool verified;
 
   const Locomotive({
     required this.id,
     required this.nameKo,
     required this.nameEn,
-    required this.nickname,
+    this.nicknameKo,
+    this.nicknameEn,
     required this.classDesignation,
     required this.roadNumber,
     required this.countryCode,
@@ -572,6 +843,7 @@ class Locomotive {
     required this.builtFrom,
     required this.builtTo,
     required this.quantityBuilt,
+    this.quantityNote,
     required this.withdrawnYear,
     required this.wheel,
     required this.tenderAxles,
@@ -580,15 +852,19 @@ class Locomotive {
     required this.gaugeMm,
     required this.serviceType,
     required this.specs,
+    this.specsBasis,
+    this.specNotes = const {},
     required this.status,
     required this.survivors,
     required this.location,
     required this.iconic,
-    required this.highlights,
-    required this.summary,
+    this.gloss = const SourcedText(ko: '', en: ''),
+    this.body = const [],
+    this.history = const [],
     required this.tags,
-    required this.sources,
-    this.references = const [],
+    this.tagsEn = const [],
+    this.sources = const [],
+    this.furtherReading = const [],
     required this.verified,
   });
 
@@ -596,8 +872,9 @@ class Locomotive {
         id: j['id'] as String,
         nameKo: j['nameKo'] as String,
         nameEn: j['nameEn'] as String,
-        nickname: j['nickname'] as String?,
-        classDesignation: j['classDesignation'] as String,
+        nicknameKo: j['nicknameKo'] as String?,
+        nicknameEn: j['nicknameEn'] as String?,
+        classDesignation: j['classDesignation'] as String?,
         roadNumber: j['roadNumber'] as String?,
         countryCode: j['countryCode'] as String,
         eraId: j['era'] as String,
@@ -607,6 +884,7 @@ class Locomotive {
         builtFrom: _i(j['builtFrom']),
         builtTo: _i(j['builtTo']),
         quantityBuilt: _i(j['quantityBuilt']),
+        quantityNote: SourcedText.maybe(j['quantityNote']),
         withdrawnYear: _i(j['withdrawnYear']),
         wheel: Wheel.fromJson(j['wheel'] as Map<String, dynamic>),
         tenderAxles: _i(j['tenderAxles']),
@@ -615,19 +893,54 @@ class Locomotive {
         gaugeMm: _i(j['gaugeMm']) ?? 1435,
         serviceType: ServiceType.parse(j['serviceType'] as String?),
         specs: LocoSpecs.fromJson(j['specs'] as Map<String, dynamic>),
+        specsBasis: Bilingual.fromJson(j['specsBasis']),
+        specNotes: {
+          for (final e in ((j['specNotes'] as Map<String, dynamic>?) ?? const {}).entries)
+            e.key: SpecNote.fromJson(e.value as Map<String, dynamic>),
+        },
         status: LocoStatus.parse(j['status'] as String?),
         survivors: _i(j['survivors']),
         location: j['location'] == null
             ? null
             : LocoLocation.fromJson(j['location'] as Map<String, dynamic>),
         iconic: j['iconic'] as bool? ?? false,
-        highlights: _s(j['highlights']),
-        summary: j['summary'] as String? ?? '',
+        gloss: SourcedText.maybe(j['gloss']) ?? const SourcedText(ko: '', en: ''),
+        body: SourcedText.listFrom(j['body']),
+        history: ((j['history'] as List?) ?? const [])
+            .map((e) => HistoryEvent.fromJson(e as Map<String, dynamic>))
+            .toList(),
         tags: _s(j['tags']),
-        sources: _s(j['sources']),
-        references: Reference.listFrom(j['references']),
+        tagsEn: _s(j['tagsEn']),
+        sources: ((j['sources'] as List?) ?? const [])
+            .map((e) => SourceRef.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        furtherReading: Reference.listFrom(j['furtherReading']),
         verified: j['verified'] as bool? ?? false,
       );
+
+  String nameOf(Lang lang) => lang == Lang.en ? nameEn : nameKo;
+  String? nicknameOf(Lang lang) => lang == Lang.en ? nicknameEn : nicknameKo;
+
+  /// 별명(한국어). 예전 이름을 쓰는 코드를 위한 별칭.
+  String? get nickname => nicknameKo;
+
+  /// 표제란의 수량. 수량 문구([quantityNote])가 있으면 그것을, 없으면 숫자를 쓴다.
+  /// 숫자도 없으면 null.
+  String? quantityLabel(Lang lang) {
+    if (quantityNote != null) return quantityNote!.of(lang);
+    final q = quantityBuilt;
+    if (q == null) return null;
+    final s = q.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    return lang == Lang.en ? s : '$s량';
+  }
+
+  /// 출처 번호 → 출처. 없는 번호면 null.
+  SourceRef? source(int n) {
+    for (final s in sources) {
+      if (s.n == n) return s;
+    }
+    return null;
+  }
 
   /// 도식에 그릴 탄수차 차축 수.
   ///
@@ -663,8 +976,9 @@ class Locomotive {
   String get searchIndex => [
         nameKo,
         nameEn,
-        nickname ?? '',
-        classDesignation,
+        nicknameKo ?? '',
+        nicknameEn ?? '',
+        classDesignation ?? '',
         roadNumber ?? '',
         wheel.whyte,
         wheel.typeName ?? '',
@@ -672,6 +986,7 @@ class Locomotive {
         ...operators,
         ...builders,
         ...tags,
+        ...tagsEn,
       ].join(' ').toLowerCase();
 }
 
@@ -682,7 +997,10 @@ class Era {
   final String nameEn;
   final int from;
   final int to;
+
+  /// 시대 설명(한국어 / 영어). 원고의 시대 설명이다.
   final String note;
+  final String noteEn;
 
   const Era({
     required this.id,
@@ -691,6 +1009,7 @@ class Era {
     required this.from,
     required this.to,
     required this.note,
+    this.noteEn = '',
   });
 
   factory Era.fromJson(Map<String, dynamic> j) => Era(
@@ -699,18 +1018,19 @@ class Era {
         nameEn: j['en'] as String,
         from: (j['from'] as num).toInt(),
         to: (j['to'] as num).toInt(),
-        note: j['note'] as String? ?? '',
+        note: (j['noteKo'] ?? j['note']) as String? ?? '',
+        noteEn: j['noteEn'] as String? ?? '',
       );
 
   String get rangeLabel => to >= 2100 ? '$from~현재' : '$from–$to';
 }
 
-/// 참고문헌 — 서적·논문·공식 간행물. 웹 페이지(sources)와 구분한다.
+/// 참고문헌 — 서적·논문·공식 간행물. 항목 글의 번호 붙은 출처([SourceRef])와 구분한다.
 ///
-/// 종이 문헌은 링크가 없어도 값이 있다: 도서관 목록·출판사에서 서지를 확인한 것만 데이터에 넣는다
-/// (`tools/references.py`). [via] 는 어디서 확인했는지, [note] 는 무엇을 다루는지.
+/// 기관차별 '더 읽을거리'는 자료조사 원고에서, 나라별·종합 문헌은 `tools/references.py` 에서 온다.
+/// [via] 는 서지를 어디서 확인했는지(원고가 새로 찾은 문헌은 비어 있다), [note] 는 무엇을 다루는지.
 class Reference {
-  final String kind; // book | article | thesis | official | catalog
+  final String kind; // book | article | journal | thesis | official | catalog | report | web
   final String title;
   final String author;
   final String publisher;
@@ -718,7 +1038,10 @@ class Reference {
   final String lang;
   final String? isbn;
   final String? url;
+
+  /// 메모(한국어 / 영어).
   final String note;
+  final String noteEn;
   final String via;
 
   const Reference({
@@ -731,6 +1054,7 @@ class Reference {
     required this.isbn,
     required this.url,
     required this.note,
+    this.noteEn = '',
     required this.via,
   });
 
@@ -743,9 +1067,12 @@ class Reference {
         lang: j['lang'] as String? ?? '',
         isbn: j['isbn'] as String?,
         url: j['url'] as String?,
-        note: j['note'] as String? ?? '',
+        note: (j['noteKo'] ?? j['note']) as String? ?? '',
+        noteEn: j['noteEn'] as String? ?? '',
         via: j['via'] as String? ?? '',
       );
+
+  String noteOf(Lang lang) => lang == Lang.en && noteEn.isNotEmpty ? noteEn : note;
 
   static List<Reference> listFrom(dynamic v) => ((v as List?) ?? const [])
       .map((e) => Reference.fromJson(e as Map<String, dynamic>))
@@ -762,19 +1089,22 @@ class Reference {
 
   String get kindLabelKo => switch (kind) {
         'article' => '논문·기사',
+        'journal' => '학술지 논문',
         'thesis' => '학위논문',
         'official' => '공식 자료',
         'catalog' => '소장품 기록',
+        'report' => '보고서',
+        'web' => '웹 문서',
         _ => '단행본',
       };
 
-  /// "저자, 『제목』, 출판사, 연도" 꼴의 한 줄 인용.
+  /// "저자, 『제목』, 출판사, 연도" 꼴의 한 줄 인용. 연도를 모르면 적지 않는다.
   String get citation {
     final parts = <String>[
       if (author.isNotEmpty) author,
       '『$title』',
       if (publisher.isNotEmpty) publisher,
-      year == null ? '연도 미확인' : '$year',
+      if (year != null) '$year',
     ];
     return parts.join(', ');
   }
@@ -788,7 +1118,10 @@ class Country {
   final String flag;
   final double lat;
   final double lon;
+
+  /// 나라 설명(한국어 / 영어). 원고의 나라 설명이다.
   final String blurb;
+  final String blurbEn;
 
   /// 이 나라 증기기관차 전반을 다루는 표준 문헌.
   final List<Reference> references;
@@ -801,6 +1134,7 @@ class Country {
     required this.lat,
     required this.lon,
     required this.blurb,
+    this.blurbEn = '',
     this.references = const [],
   });
 
@@ -811,7 +1145,8 @@ class Country {
         flag: j['flag'] as String,
         lat: (j['lat'] as num).toDouble(),
         lon: (j['lon'] as num).toDouble(),
-        blurb: j['blurb'] as String? ?? '',
+        blurb: (j['blurbKo'] ?? j['blurb']) as String? ?? '',
+        blurbEn: j['blurbEn'] as String? ?? '',
         references: Reference.listFrom(j['references']),
       );
 }

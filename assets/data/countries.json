@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "countries": [
     {
       "code": "GB",
@@ -8,7 +8,8 @@
       "flag": "🇬🇧",
       "lat": 54.0,
       "lon": -2.0,
-      "blurb": "증기기관차가 태어난 나라. 1804년 트레비식의 첫 주행부터 1938년 맬러드의 세계 최고속도까지 모든 이정표가 여기서 시작됐다.",
+      "blurbKo": "1804년 트레비식의 기관차가 웨일스의 트램로드를 달렸고, 1825년 스톡턴·달링턴 철도가 증기기관차로 개통했다. 영국 국철의 정기 증기 운행은 1968년 8월에 끝났다.",
+      "blurbEn": "Trevithick's engine ran on a Welsh tramroad in 1804, and the Stockton and Darlington Railway opened with steam in 1825. Regular steam on British Railways ended in August 1968.",
       "references": [
         {
           "kind": "book",
@@ -67,7 +68,8 @@
       "flag": "🇺🇸",
       "lat": 39.5,
       "lon": -98.0,
-      "blurb": "대륙 횡단 규모가 만들어낸 거대 기관차의 나라. 관절식(articulated) 대형기의 극한을 밀어붙였다.",
+      "blurbKo": "유니언 퍼시픽의 빅보이와 체서피크 앤드 오하이오 철도의 앨러게이니처럼 산악 구배용 대형 관절식 기관차를 만들었다. 1941년에 나온 빅보이 가운데 4014호는 2019년 운행할 수 있게 복원되었다.",
+      "blurbEn": "Large articulated engines were built for mountain grades, among them Union Pacific's Big Boy and the Chesapeake and Ohio's Allegheny. Big Boy No. 4014, built in 1941, was returned to running order in 2019.",
       "references": [
         {
           "kind": "book",
@@ -114,7 +116,8 @@
       "flag": "🇩🇪",
       "lat": 51.0,
       "lon": 10.0,
-      "blurb": "표준화(Einheitsdampflok)와 공학적 완성도. 유선형 고속기와 전시 표준형 대량생산을 동시에 해냈다.",
+      "blurbKo": "1835년 영국제 아들러가 뉘른베르크–퓌르트 사이 루트비히 철도를 열었다. 1925년 계획에 따라 01형 같은 표준형 기관차를 연속 생산했고, 1936년 05형 05 002가 시속 200.4 km를 냈다.",
+      "blurbEn": "The British-built Adler opened the Ludwig Railway between Nuremberg and Fürth in 1835. Standard designs such as the Class 01 were built in series under the 1925 program, and in 1936 Class 05 No. 05 002 reached 200.4 km/h.",
       "references": [
         {
           "kind": "book",
@@ -149,7 +152,8 @@
       "flag": "🇫🇷",
       "lat": 46.5,
       "lon": 2.5,
-      "blurb": "샤플롱(André Chapelon)의 열역학적 개량으로 '가장 효율적인 증기기관차'를 만들어낸 나라.",
+      "blurbKo": "1853년 칙령으로 크램프턴 기관차의 허용 속도가 시속 120 km로 올랐다. 1929년부터 샤플롱이 개조한 복식 기관차가 급행을 끌었고, 1975년 9월 24일 140 C 287이 프랑스 철도의 마지막 증기 영업 열차를 끌었다.",
+      "blurbEn": "An 1853 decree raised the permitted speed of the Crampton engines to 120 km/h. From 1929 compound engines rebuilt by Chapelon hauled expresses, and on September 24, 1975, No. 140 C 287 hauled the last commercial steam train on French railways.",
       "references": [
         {
           "kind": "book",
@@ -184,7 +188,8 @@
       "flag": "🇯🇵",
       "lat": 36.5,
       "lon": 138.0,
-      "blurb": "협궤(1067mm) 제약 안에서 정밀하게 다듬어진 형식들. 지금도 관광열차로 다수가 살아 움직인다.",
+      "blurbKo": "1872년 신바시–요코하마 철도가 영국에서 들여온 기관차로 개업했고, 1913년 9600형부터 기관차를 본격적으로 양산했다. 국철의 증기기관차 운용은 1976년 3월 2일 끝났고, 2026년에도 여러 노선에서 보존 기관차가 관광 열차를 끌었다.",
+      "blurbEn": "The Shimbashi–Yokohama railway opened in 1872 with engines imported from Britain, and full-scale series production began with the Class 9600 in 1913. JNR steam operation ended on March 2, 1976; in 2026 preserved engines were hauling tourist trains on several lines.",
       "references": [
         {
           "kind": "book",
@@ -255,7 +260,8 @@
       "flag": "🇰🇷",
       "lat": 36.5,
       "lon": 127.8,
-      "blurb": "1899년 경인선 모가형으로 시작해 1967년 증기 운행 종료. 미국·일본식 형식명이 한글 음차로 남았다.",
+      "blurbKo": "1899년 9월 18일 경인철도가 미국제 모가형 기관차로 노량진–인천 간 영업을 시작했다. 의왕 철도박물관의 파시5형 23호와 혀기11형 13호는 국가등록문화유산이다.",
+      "blurbEn": "The Gyeongin Railway opened between Noryangjin and Incheon on September 18, 1899, with American-built Moga engines. Pasi5 No. 23 and Hyeogi-11 No. 13 at the Railroad Museum in Uiwang are registered national heritage.",
       "references": [
         {
           "kind": "official",
@@ -338,7 +344,8 @@
       "flag": "🇨🇳",
       "lat": 35.0,
       "lon": 105.0,
-      "blurb": "세계에서 가장 늦게까지 증기기관차를 신조하고 운행한 나라. 2022년에야 정기 증기 화물이 멈췄다.",
+      "blurbKo": "1956–1988년 첸진(QJ)형을 4,700량 넘게 만들었고, 상유(SY)형은 1999년까지 만들었다. 산다오링 탄광 철도의 증기 입환은 2024년 1월 15일 젠서(JS)형 8089호의 퇴역으로 끝났다.",
+      "blurbEn": "More than 4,700 Qianjin (QJ) engines were built from 1956 to 1988, and Shangyou (SY) production went on until 1999. Steam switching at the Sandaoling mine railway ended when Jianshe (JS) No. 8089 was retired on January 15, 2024.",
       "references": [
         {
           "kind": "book",
@@ -361,7 +368,8 @@
       "flag": "🇮🇳",
       "lat": 22.0,
       "lon": 79.0,
-      "blurb": "광궤 대형기와 산악 협궤가 공존. 세계 최고령 현역 기관차 Fairy Queen이 있다.",
+      "blurbKo": "1855년 영국에서 만든 페어리 퀸이 동인도 철도를 달렸고, 1970년 치타란잔 공장의 WG형 10560호가 인도에서 만든 마지막 광궤 증기기관차가 되었다. 610 mm 궤간의 다르질링 히말라야 철도는 1999년 유네스코 세계유산에 올랐다.",
+      "blurbEn": "Fairy Queen, built in England in 1855, ran on the East Indian Railway, and WG No. 10560, completed at Chittaranjan in 1970, was the last broad-gauge steam locomotive built in India. The 610 mm gauge Darjeeling Himalayan Railway was inscribed as a UNESCO World Heritage Site in 1999.",
       "references": [
         {
           "kind": "book",
@@ -408,7 +416,8 @@
       "flag": "🇿🇦",
       "lat": -29.0,
       "lon": 24.5,
-      "blurb": "케이프 궤간(1067mm)에서 가라트(Garratt) 관절식이 가장 발달한 나라. 증기 개량의 마지막 실험장.",
+      "blurbKo": "남아프리카 철도는 1,067 mm 케이프 궤간에서 가라트식 관절 기관차와 4-8-4 기관차를 썼다. 1981년 데이비드 워데일이 25NC형을 개조한 26형은 비교 시험에서 석탄을 28%, 물을 30% 덜 썼다.",
+      "blurbEn": "South African Railways ran Garratt articulated engines and 4-8-4s on the 1,067 mm Cape gauge. The Class 26, rebuilt from a 25NC by David Wardale in 1981, used 28% less coal and 30% less water in comparative tests.",
       "references": [
         {
           "kind": "book",
@@ -467,7 +476,8 @@
       "flag": "🇷🇺",
       "lat": 60.0,
       "lon": 90.0,
-      "blurb": "광궤(1520mm)의 여유로 대형 보일러를 얹은 기관차들. 4-14-4 같은 극단적 시도도 있었다.",
+      "blurbKo": "1912년부터 만든 E형은 하위 형식을 합쳐 1만 량을 넘었다. 1934년에는 동륜 7축의 AA20-1을 만들었으나 두 번째 차량은 완성되지 않았다.",
+      "blurbEn": "The Class E, built from 1912, exceeded 10,000 engines across its sub-classes. In 1934 the AA20-1, with seven driving axles, was built, but a second engine was never completed.",
       "references": [
         {
           "kind": "book",
@@ -514,7 +524,8 @@
       "flag": "🇵🇱",
       "lat": 52.0,
       "lon": 19.5,
-      "blurb": "볼슈틴(Wolsztyn) 기관고 — 세계에서 유일하게 정기 여객열차를 증기로 끌던 곳.",
+      "blurbKo": "파블로크가 1951–1954년에 만든 Ol49형은 볼슈틴 기관고의 정기 여객열차를 오래 끌었다. 볼슈틴 기관고는 2026년 3월에도 정기 증기 열차를 운행했다.",
+      "blurbEn": "The Ol49, built by Fablok in 1951–1954, long worked scheduled passenger trains from the Wolsztyn depot, which was still running scheduled steam trains in March 2026.",
       "references": [
         {
           "kind": "book",
@@ -561,7 +572,8 @@
       "flag": "🇦🇺",
       "lat": -25.5,
       "lon": 134.0,
-      "blurb": "주(州)마다 궤간이 달랐던 나라. 영국식 설계에 현지 개량을 얹은 형식들이 많다.",
+      "blurbKo": "궤간이 주마다 달라 뉴사우스웨일스는 1,435 mm, 빅토리아는 1,600 mm 광궤와 762 mm 협궤를 썼다. 1970년 3801호가 끈 특별열차는 증기 열차로는 처음 호주를 동서로 횡단했다.",
+      "blurbEn": "Gauges differed between states: New South Wales used 1,435 mm, and Victoria 1,600 mm broad gauge and 762 mm narrow gauge. In 1970 a special hauled by No. 3801 was the first steam train to cross Australia from east to west.",
       "references": [
         {
           "kind": "book",
@@ -584,7 +596,8 @@
       "flag": "🇨🇦",
       "lat": 56.0,
       "lon": -106.0,
-      "blurb": "대륙 횡단 노선과 혹한. CPR 로열 허드슨 같은 장거리 여객기가 상징.",
+      "blurbKo": "1939년 국왕 조지 6세의 캐나다 순방 때 캐나다 태평양 철도 2850호가 왕실 열차를 끈 뒤, 이 형식은 '로열 허드슨'이라는 이름을 받았다.",
+      "blurbEn": "After Canadian Pacific No. 2850 hauled King George VI's royal train during his 1939 tour of Canada, the class was given the name Royal Hudson.",
       "references": [
         {
           "kind": "book",
@@ -619,7 +632,8 @@
       "flag": "🇨🇭",
       "lat": 46.8,
       "lon": 8.2,
-      "blurb": "치차(rack) 등판 기관차의 본고장. 알프스 급구배를 증기로 오른다.",
+      "blurbKo": "치차 구간과 점착 구간을 함께 달리는 기관차로 알프스의 급구배를 넘었다. 1913–1914년 푸르카 고개 철도용으로 만든 HG 3/4형은 4량이 남아 있다.",
+      "blurbEn": "Rack-and-adhesion engines worked the steep Alpine grades. Four of the HG 3/4s built in 1913–1914 for the Furka Pass line survive.",
       "references": [
         {
           "kind": "book",
@@ -642,7 +656,8 @@
       "flag": "🇦🇷",
       "lat": -38.0,
       "lon": -64.0,
-      "blurb": "파타고니아의 750mm 협궤 '라 트로치타'가 아직도 달린다.",
+      "blurbKo": "1922년 들여온 헨셸·볼드윈제 2-8-2 기관차가 750 mm 협궤의 잉헤니에로 하코바시–에스켈 선을 달렸다. '라 트로치타'라 불리는 이 노선은 1999년 국가 역사 기념물이 되었고, 2026년에도 관광열차가 다녔다.",
+      "blurbEn": "Henschel and Baldwin 2-8-2s bought in 1922 worked the 750 mm gauge line from Ingeniero Jacobacci to Esquel. Known as La Trochita, it was declared a National Historic Monument in 1999 and was still carrying tourist trains in 2026.",
       "references": [
         {
           "kind": "book",
@@ -677,7 +692,8 @@
       "flag": "🇮🇹",
       "lat": 42.8,
       "lon": 12.5,
-      "blurb": "카프로티 밸브기어 등 독자 기술. 남유럽 특유의 경량 고속기.",
+      "blurbKo": "1912년부터 685형이 이탈리아 국철의 간선 급행을 끌었다. 1921년 시험을 시작한 카프로티 밸브 장치를 1923년부터 685형에도 달았다.",
+      "blurbEn": "From 1912 the Class 685 hauled main-line expresses on the Italian State Railways. Caprotti valve gear, tested from 1921, was fitted to 685s from 1923.",
       "references": [
         {
           "kind": "book",

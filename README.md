@@ -4,7 +4,7 @@
 이 저장소는 **동작하는 뼈대**다. 데이터 스키마, 화면 구조, 상태 관리, 검증까지 자리를 잡아뒀고
 그 위에 데이터와 사진을 얹으면 된다.
 
-**현재 버전 0.1.0** (`pubspec.yaml`, 첫 공개본). 변경 내역은 `CHANGELOG.md`.
+**현재 버전 0.2.0** (`pubspec.yaml`, 작업 중 — 자료조사 원고 병합). 변경 내역은 `CHANGELOG.md`.
 
 ---
 
@@ -19,10 +19,12 @@
 | 지도 | 오프라인 육지 폴리곤 177개국 / 10,281점 · 상하 제한 + 좌우 순환 (flutter_map 8) |
 | 도색(livery) | 44종 · 전량 배정 |
 | 실루엣(shape) | 10종 · 전량 배정 |
-| 출처 확인 완료 | 76량 대조 완료 · 66량 확정 (`verified: true`) — `tools/verified.py` |
-| 참고문헌 | 종합 5 · 국가별 42 · 기관차별 56량 (`tools/references.py`, 서적·논문·공식) |
-| 중량 기준 표기 | 53량 (`weightBasis`) · 별명 분리 10량 (`nickname`) |
-| 대표 명차 | 35량 (`iconic: true`) |
+| 항목 글 | 76량 한영 원고 — 뜻풀이·본문 528문장·연혁 682줄, 문장마다 출처 번호 (`tools/manuscript/entries.json`, 자료조사 2026-10-23) |
+| 출처 | 항목 글에 번호로 단 출처 626건 · 더 읽을거리 169건 + 나라별 44 · 종합 5 (`tools/references.py`) |
+| 출처 대조 | 76량 · 71량 확정 (`verified: true`) — `tools/verified.py` (VERIFIED → RECHECK → RESEARCH) |
+| 제원 | 최고속도(설계·허용)와 기록 속도(시험·운행) 분리 — 기록 속도 16량 · 수량 문구 5량 (`quantityNote`) |
+| 별명 | 한영 짝 (`nicknameKo`/`nicknameEn`) |
+| 대표 기관차 | 35량 (`iconic: true`) |
 
 국가별: 🇬🇧 10 · 🇺🇸 10 · 🇩🇪 8 · 🇯🇵 8 · 🇰🇷 6 · 🇨🇳 5 · 🇫🇷 5 · 🇮🇳 4 · 🇿🇦 4 · 🇷🇺 4 · 🇦🇺 3 · 🇵🇱 3 · 🇨🇦 2 · 🇨🇭 2 · 🇦🇷 1 · 🇮🇹 1
 
@@ -32,7 +34,7 @@
 
 ### 코드 없이 먼저 보기
 `preview/steam-atlas-preview.html` 를 브라우저로 열면 됩니다. 설치 필요 없음.
-Flutter 앱과 같은 데이터·화면 구조를 그대로 담았고 검색·필터·국가탭·연표·지도·설정이 실제로 동작합니다.
+Flutter 앱과 같은 데이터·화면 구조를 그대로 담았고 검색·필터·연표·지도·비교·설정이 실제로 동작합니다.
 설정 탭에서 라이트/다크를 바꿔볼 수 있습니다.
 
 ### Flutter 앱 실행
@@ -45,7 +47,7 @@ cd steam_atlas
 flutter create . --project-name steam_atlas   # 플랫폼 스캐폴딩 생성 (최초 1회)
 flutter pub get
 flutter run                                    # Flutter 3.32 이상 권장
-flutter test                                   # 정합성 31개 + 지도 앱 연동 3개 + 지도 카메라 4개 + 클러스터 6개 + 비교 2개 (지도 순환 작업 이후 컴파일 미검증 — analyze 먼저)
+flutter test                                   # 정합성 37개 + 지도 앱 연동 3개 + 지도 카메라 4개 + 클러스터 6개 + 비교 2개 (0.2.0 도 컴파일 미검증 — analyze 먼저)
 ```
 
 > `flutter create .` 는 기존 `lib/`, `pubspec.yaml` 을 덮어쓰지 않습니다.
@@ -336,8 +338,8 @@ flutter_map 은 이 기능 때문에 **8.x** 다 (Flutter 3.27+ / Dart 3.6+). 8.
 어느 앱을 고르든 같은 `geo:` 주소가 넘어가므로 **주소 하나로 이름이 보이게** 만든다:
 
 - 시설 공식 명칭(`location.query`)이 있으면 `geo:lat,lng?q=검색어` — 좌표 근처에서 그 이름을 검색해
-  지도 앱이 가진 실제 장소(이름·주소·사진)를 연다. 검색어는 `tools/build_seed.py` 의 `MAP_QUERIES`
-  (장소명 → 검색어, 71곳 중 56곳)에서 관리한다. 장소명과 안 맞는 키가 남으면 빌드가 실패한다.
+  지도 앱이 가진 실제 장소(이름·주소·사진)를 연다. 장소명(한영)·좌표·검색어는 자료조사 원고가 정한다
+  (69곳 중 67곳에 검색어). 좌표가 없는 위치('러시아 각지')는 항목 화면에 글로만 나오고 지도에는 찍지 않는다.
 - 검색어가 없는 곳('각지 보존' 등 특정 시설이 아닌 위치)은 `geo:0,0?q=lat,lng(라벨)` — 문서화된 라벨 형식.
   일부러 비운 것이다: 그런 좌표는 도시 중심일 뿐이라 검색어를 붙이면 엉뚱한 장소가 잡힌다.
 - **좌표에 라벨을 붙이는 방식은 Google 지도가 라벨을 버리고 좌표(`54°37'48.0"N …`)만 보여주는 경우가 있어**
@@ -364,59 +366,65 @@ flutter_map 은 이 기능 때문에 **8.x** 다 (Flutter 3.27+ / Dart 3.6+). 8.
 
 ## 4. 데이터 스키마
 
-`assets/data/locomotives.json` (`schemaVersion: 1`)
+`assets/data/locomotives.json` (`schemaVersion: 2`). 한 량의 예(맬러드, 줄임):
 
 ```jsonc
 {
   "id": "gb-lner-a4-mallard",       // 국가-철도-형식-이름
-  "nameKo": "맬러드",
-  "nameEn": "Mallard",
-  "nickname": null,                  // 별명·애칭 (Kriegslok, 티거리…). 공인 형식명이 아닌 이름은 여기만
-  "classDesignation": "LNER Class A4",
-  "roadNumber": "4468",
-  "countryCode": "GB",
-  "era": "golden",                   // pioneer|expansion|classic|golden|twilight|revival
-  "operators": ["LNER", "British Railways"],
-  "builders": ["Doncaster Works"],
-  "designer": "Nigel Gresley",
+  "nameKo": "맬러드", "nameEn": "Mallard",
+  "nicknameKo": null, "nicknameEn": null,   // 별명(데고이치, Kriegslok…). 공인 형식명이 아닌 이름은 여기만
+  "classDesignation": "LNER Class A4",      // 출처로 뒷받침되는 기호가 없으면 null
+  "roadNumber": "4468",                     // 항목이 한 량을 가리킬 때만
+  "countryCode": "GB", "era": "golden",     // era 는 제작 시작 연도로 계산
+  "operators": ["LNER", "British Railways"], "builders": ["Doncaster Works"], "designer": "Nigel Gresley",
   "builtFrom": 1938, "builtTo": 1938,
-  "quantityBuilt": 35,               // 형식 전체 생산량
+  "quantityBuilt": 35,
+  "quantityNote": null,             // 자료마다 수량이 달라 숫자 하나로 못 쓸 때 {"ko": "7,000량 이상", "en": …, "src": […]}
   "withdrawnYear": 1963,
   "wheel": { "whyte": "4-6-2", "uic": "2'C1'h3", "typeName": "Pacific" },
-  "tenderAxles": 4,                  // 탄수차 차축 수. null이면 추정, 0은 '없음'
-  "livery": "lner-garter-blue",      // liveries 팔레트의 id
-  "gaugeMm": 1435,
-  "serviceType": "express",          // express|mixed|freight|tank|articulated|narrow|rack
-  "specs": {
-    "lengthMm": 21600, "weightT": 165.0,
-    "weightBasis": "locoAndTender",  // loco(기관차 단독) | locoAndTender(기관차+탄수차) | null(미확인)
-    "driverDiameterMm": 2032,
-    "boilerPressureBar": 17.6, "cylinders": 3,
-    "tractiveEffortKn": 156.0, "powerKw": 1640, "topSpeedKmh": 202.8
+  "gaugeMm": 1435, "tenderAxles": 4, "livery": "lner-garter-blue", "shape": "streamlined",
+  "serviceType": "express",         // express|passenger|mixed|freight|tank|articulated|narrow|rack
+  "status": "static", "survivors": 6,   // status: operational|operable|static|restoration|scrapped|replica
+  "specs": {                        // 미터법. 출처 없이 엇갈리는 값은 null
+    "lengthMm": 21650, "weightT": 104.6, "weightBasis": "loco",   // loco(기관차만) | locoAndTender(탄수차 포함)
+    "driverDiameterMm": 2032, "boilerPressureBar": 17.2, "cylinders": 3,
+    "tractiveEffortKn": 157.7, "powerKw": null,
+    "topSpeedKmh": null,            // 설계·허용 최고 속도만
+    "recordSpeedKmh": 201.2,        // 시험·운행 중 기록 (최고속도와 섞지 않는다)
+    "leadingWheelDiameterMm": 965, "trailingWheelDiameterMm": 1118,
+    "cylinderSize": "470 × 660", "wheelbaseMm": null, "waterL": 22730
   },
-  "status": "static",                // operational|operable|static|restoration|scrapped|replica
-  "survivors": 6,
-  "location": {
-    "name": "국립철도박물관, 요크 (NRM York)", "lat": 53.9603, "lon": -1.0951,
-    "query": "National Railway Museum York"   // 지도 앱 검색어(MAP_QUERIES). 특정 시설이 아니면 null
+  "specsBasis": { "ko": "4468호 맬러드, A4형 표준 치수", "en": "…" },
+  "specNotes": {                    // 제원 칸별 주석. 키 순서 = 화면 순서. 궤간은 gaugeMm 키
+    "recordSpeedKmh": { "orig": "125 mph",          // 원래 단위(출처가 미터법이면 null)
+      "noteKo": "1938년 7월 3일 스토크 뱅크. …", "noteEn": "…", "src": [7, 2] }
   },
+  "location": { "nameKo": "국립철도박물관, 요크", "nameEn": "National Railway Museum, York",
+    "noteKo": "정태 전시", "noteEn": "Static display",
+    "lat": 53.9606, "lon": -1.0965,               // 특정 장소가 아니면 둘 다 null
+    "query": "National Railway Museum York", "src": [9, 8, 10] },
   "iconic": true,
-  "highlights": ["증기기관차 세계 최고속도 202.8 km/h (1938-07-03)"],
-  "summary": "...",
-  "tags": ["속도기록", "유선형", "명차"],
-  "sources": ["https://..."],
-  "references": [                    // 서적·논문·공식 자료 (tools/references.py). 웹 페이지는 sources 에
-    { "kind": "book", "title": "Mallard: How the Blue Streak Broke the World Steam Speed Record",
-      "author": "Don Hale", "publisher": "Aurum Press, London", "year": 2005, "lang": "en",
-      "isbn": "9781854109392", "url": null, "note": "1938년 기록 주행의 전말", "via": "Stanford SearchWorks 서지" }
-  ],
-  "verified": true                   // 출처 대조를 마쳤는가
+  "gloss": { "ko": "1938년 증기기관차 속도 세계 기록을 세운 영국의 유선형 급행 기관차.", "en": "…", "src": [1, 2] },
+  "body": [ { "ko": "…다.", "en": "…", "src": [3, 4] } ],
+  "history": [ { "date": "1938-07-03", "approx": false, "ko": "…", "en": "…", "src": [6, 7] } ],
+  "tags": ["속도기록", "유선형"], "tagsEn": ["Speed record", "Streamlined"],
+  "sources": [ { "n": 1, "kind": "museum", "tier": "primary", "lang": "en", "ko": "…", "en": "…", "url": "https://…" } ],
+  "furtherReading": [ { "kind": "book", "author": "…", "title": "…", "publisher": "…", "year": 1973, "lang": "en",
+                        "isbn": null, "url": null, "noteKo": "…", "noteEn": "…", "via": "…" } ],
+  "verified": true                  // 출처 대조를 마쳤는가
 }
 ```
 
-**`verified` 필드가 핵심이다.** 증기기관차 제원은 자료마다 값이 다르다(측정 조건, 개조 시점,
-단위 환산 차이). 확인한 것과 아직 못 한 것을 구분해두지 않으면 나중에 어디를 다시 봐야 할지
-알 수 없게 된다. 앱에서도 미확인 항목은 상세 화면에 "수치 확인 필요"로 표시된다.
+- **출처 번호.** `gloss`·`body`·`specNotes`·`history`·`location`·`quantityNote` 의 `src` 는 그 항목 `sources` 의 `n` 이다.
+  번호는 화면 순서(뜻풀이 → 본문 → 제원 → 연혁 → 지금 있는 곳)로 처음 나오는 차례대로 1, 2, 3… 이다(빌드가 검사).
+- **한영.** 이름·별명·설명 글·제원 주석·위치·출처·더 읽을거리 메모, 시대(`eras[].noteKo/noteEn`)·나라(`blurbKo/blurbEn`)·
+  생김새(`shapes[].nameEn/noteKo/noteEn`) 설명이 짝으로 있다. 화면 문구는 아직 한국어뿐이다(`AppState.lang`).
+- 원래 단위 표기(`specNotes.*.orig`)는 출처 원문(`tools/manuscript/entries.json` 의 `orig`)에서 수치와 단위만 뽑은 것이다.
+  규칙과 손으로 정한 예외는 `tools/manuscript.py` 의 `orig_display`·`ORIG_DISPLAY`, 결과 전체는 `python3 tools/manuscript.py`.
+
+**`verified` 필드.** 증기기관차 제원은 자료마다 값이 다르다(측정 조건, 개조 시점, 단위 환산 차이).
+확인한 것과 아직 못 한 것을 구분해 두지 않으면 나중에 어디를 다시 봐야 할지 알 수 없다. 앱의 항목 화면은
+미확인 항목에 "일부 수치는 출처끼리 엇갈려 아직 확인하고 있어요."를 적는다.
 
 ### 값이 없으면 `null`
 제원을 0이나 추정치로 채우지 않는다. UI가 `—`로 표시하고, 정렬에서는 뒤로 밀린다.
@@ -425,17 +433,36 @@ flutter_map 은 이 기능 때문에 **8.x** 다 (Flutter 3.27+ / Dart 3.6+). 8.
 
 ## 5. 데이터 추가하는 법
 
-`tools/build_seed.py`의 `LOCOS` 리스트에 항목을 추가하고 다시 생성한다.
+데이터는 세 겹으로 만든다 (`python3 tools/build_seed.py`).
+
+1. **초안** — `tools/build_seed.py` 의 `LOCOS`. 도색·생김새·탄수차 축수(그림), 형식 기호·제조사·운영 철도.
+2. **출처 대조본** — `tools/verified.py`. 출처로 확인한 값만, 값마다 이유(`_why`/`_whyBy`)와 출처(`_src`).
+   `VERIFIED`(1차) → `RECHECK`(재대조) → `RESEARCH`(자료조사 원고 반영, 2026-10-23) 순으로 덧씌운다.
+3. **자료조사 원고** — `tools/manuscript/entries.json`. 이름·별명, 뜻풀이·본문·연혁(한영), 제원 주석, 새 제원,
+   지금 있는 곳, 출처, 더 읽을거리, 시대·나라·생김새 설명. `tools/manuscript.py` 가 병합한다.
+   **표제란(제작·수량·보존 상태·퇴역·현존·차량 번호·차륜 배치)·궤간·기존 제원 8칸은 2 의 결과가 원고와 같아야 한다.** 다르면 빌드가 실패한다.
+
+### 원고가 새로 왔을 때
+
+자료조사 세션이 원고를 고치면 공유 폴더(`공유\자료조사\entries.json`)에 새 판을 둔다.
+
+1. `tools/manuscript/entries.json` 에 그대로 덮어쓴다(손으로 고치지 않는다).
+2. `python3 tools/build_seed.py` — 원고와 앱 값이 다르면 칸별로 목록이 나온다.
+3. 받아들일 값을 `tools/verified.py` 의 `RESEARCH` 에 이유·출처와 함께 옮긴다. 받아들이지 않을 값은 자료조사 쪽에 답 메모로 돌려보낸다.
+4. `python3 tools/build_seed.py && python3 tools/check_facts.py && python3 tools/build_preview.py`
+
+### 새 기관차를 넣을 때
+
+`LOCOS` 에 초안을 넣고, 원고(`entries.json`)에 같은 id 의 항목이 있어야 빌드된다 — 원고 없이는 항목 글이 비기 때문이다.
 
 ```python
 loco("jp-c62", "C62형", "JNR Class C62",
      "JNR C62", "JP", "twilight", "4-6-4",
      no="C62 2", built=1948, builtTo=1949, qty=49,
-     gauge=1067, service="express", speed=129, weight=145.2,
+     gauge=1067, service="express", weight=145.2,
      livery="jnr-black", shape="classic", tender=4,
      status="static", survivors=3, iconic=True,
-     highlights=["협궤 세계 최고속도 129 km/h (1954)"],
-     summary="...", tags=["협궤", "고속"], verified=False,
+     tags=["협궤", "고속"], verified=False,
      place="교토 철도박물관", lat=34.9870, lon=135.7370),
 ```
 
@@ -444,10 +471,12 @@ loco("jp-c62", "C62형", "JNR Class C62",
 - id 중복
 - `status` / `serviceType` / `era` / `countryCode` 유효값
 - `builtTo >= builtFrom`, `withdrawnYear >= builtFrom`
-- 제작연도가 지정한 시대 구간 안에 있는가 (±5년 허용)
+- 제작연도가 지정한 시대 구간 안에 있는가
 - `scrapped`인데 현존 수량이 0보다 큰가 / 보존 위치가 붙어 있는가
 - 좌표 범위, 동륜 직경 상식 범위
-- 최고속도가 세계기록(202.8 km/h)을 넘는가
+- 최고속도·기록 속도가 증기기관차 세계 기록(201.2 km/h, 여유 두고 210)을 넘는가
+- 값이 있는 제원 칸마다 출처(주석)가 있는가 / 값이 없는 칸에 주석이 붙지 않았는가
+- 원고와 앱 값이 같은가 (`tools/manuscript.py check`) / 원고의 출처 번호가 화면 순서대로 이어지는가
 - 궤간이 알려진 값 목록에 있는가
 - 탄수차 축수가 0~8 범위인가 / 탱크식·가라트인데 탄수차가 지정되지 않았는가
 - `livery` 가 지정됐는가 / `LIVERIES` 에 실제로 있는 id 인가 / 쓰이지 않는 도색이 남았는가
@@ -494,18 +523,32 @@ python3 tools/build_seed.py && python3 tools/check_facts.py && python3 tools/bui
 `tools/export_references_md.py` 와 `tools/export_verified_md.py` 가 프로젝트 문서 `참고문헌.md`·`고증-대조-기록.md` 를 만든다 — 손으로 고치지 말고 원본을 고친 뒤 다시 생성한다.
 뉴커먼 학회지 논문은 Crossref DOI 레코드(`api.crossref.org/works/<doi>`)로 서지를 확인해 `_tns()` 로 넣는다.
 
-웹 페이지(`sources`)와 별개로 **서적·논문·공식 간행물**을 따로 둔다. 현지어 자료 우선: 한국은 철도청·국가유산청,
+항목 글에 번호로 단 출처(`sources`)와 별개로 **서적·논문·공식 간행물**을 따로 둔다. 현지어 자료 우선: 한국은 철도청·국가유산청,
 일본은 国鉄 백년사·NDL 소장 문헌, 독일은 EK/transpress 형식별 단행본, 프랑스는 Chapelon 원전, 폴란드는 WKŁ,
 러시아는 Раков, 남아공은 Holland/Wardale, 중국은 中国铁道出版社 …
 
-- `GENERAL` (여러 나라에 걸친 종합서) · `COUNTRY_REFS` (국가별 표준 문헌, 16개국 전부) · `LOCO_REFS` (기관차별)
+- `GENERAL` (여러 나라에 걸친 종합서) · `COUNTRY_REFS` (국가별 표준 문헌, 16개국 전부) · `LOCO_REFS` (기관차별 — 2026-10-23 부터는
+  원고의 '더 읽을거리'가 대신한다. 원고가 이 109건의 서지를 고치고 메모를 한영으로 다시 쓴 뒤 63건을 더했다. 여기 목록은 서지 확인 경로 `via` 의 기록으로 남는다)
 - 항목마다 `via`(서지를 어디서 확인했는지 — NDL·국회도서관·SearchWorks·출판사·학술DB·위키 문헌목록)와
   `note`(무엇을 다루는지)를 적는다. **확인 못 한 연도는 `None` 으로 두고 그럴듯하게 채우지 않는다.**
 - 문헌의 `url` 은 도서관 목록·출판사·학술DB·공식 페이지만. 위키·판매 사이트는 넣지 않는다(테스트가 막는다).
-- 앱 상세 화면은 "이 형식을 다룬 문헌 → 이 나라 증기기관차 전반 → 종합서(접힘)" 순으로, 그 아래 "웹 출처".
+- 앱 항목 화면은 "출처(번호)" 다음에 "더 읽을거리 → 이 나라 증기기관차 전반(접힘) → 여러 나라를 함께 다룬 책(접힘)".
 - 정리본은 프로젝트 문서 `참고문헌.md` 에 국가별로 있다.
 
-#### 검증 현황 (2026-09)
+#### 자료조사 원고 반영 (2026-10-23)
+
+자료조사 세션이 76량을 1차 자료·현지어 자료·당대 잡지 스캔본까지 다시 대조하고(출처 698건, 13개 언어) 한영 원고를 썼다.
+앱이 받아들인 값은 `verified.py` 의 `RESEARCH` 76량 338칸이고, 칸마다 이유와 출처가 있다. 큰 것만:
+
+- 최고속도와 기록 속도를 나눴다. 맬러드는 최고속도를 비우고 기록 속도 201.2 km/h(125 mph, 1948년 기념판 126 mph 는 주석), 05형은 175 / 200.4 km/h. 기록 속도 16량.
+- 근거를 찾지 못했거나 자료가 정면으로 엇갈리는 값은 비웠다(맬러드·빅보이 출력, Y6b 중량·전장, 01·44·52형 견인력 등).
+- 대표 차량을 소재가 분명한 차량으로 바꿨다: C57 1(교토), 15F 3007(글래스고), 44 1593(네덜란드 VSM), 지치부 철도의 C58 363.
+- 로켓호 퇴역 1840(1862 는 기증 연도), 스톡턴·달링턴 궤간 1,422 mm, 앨러게이니 중량 349.9 t(기관차만), 빅보이 539.5 t, 241 P 동륜 2,020 mm.
+- 원고에 없는 앱 칸은 정정안에서 고른 것만: 제조사·운영 철도(C62 제작사에서 미쓰비시 제외 등), 형식 기호(231 E, KF, 페어리 퀸 22호, 한국 형식 로마자 Mika3·Pasi5·Teou1·Hyeogi8),
+  탄수차 축수(밀워키 A 5축, E형 4축, QJ 4축), 용도('여객' 추가), 모가형 생김새(출고 사진대로 카우캐처 없음), 평가어 태그 삭제.
+- 받아들이지 않은 것과 원고 안에서 서로 맞지 않는 것은 공유 폴더의 답 메모로 자료조사 쪽에 돌려보냈다.
+
+#### 검증 현황 (2026-09, 기록)
 
 76량 전부 출처 대조를 마쳤고, 66량이 `verified=true`. 나머지 10량은 출처가 서로 다르거나
 도색처럼 확인할 자료가 없어 `_verified: False` 로 남겨 앱에서 "확인 필요" 표시가 뜬다.
@@ -571,7 +614,8 @@ python3 tools/build_seed.py && python3 tools/build_preview.py
 - [x] 전 기능 재검토 — 연표 판 정렬·정렬 방향·궤간 용어·시대 자동 계산·참고문헌 중복 · 제원 단위 재대조 57건
 - [x] 마커 클러스터링 — 화면 거리로 묶고, 누르면 확대, 같은 자리면 목록
 - [ ] "오늘의 기관차" 위젯 / 알림
-- [ ] 다국어 (한/영) — 모델에 이미 `nameKo`/`nameEn`이 분리돼 있다
+- [ ] 영어 화면 — 데이터·모델은 한영 짝으로 준비됨(`Lang`, `…of(lang)`). 화면 문구와 처음 실행 때의 언어 창은 새 디자인을 옮길 때
+- [ ] 새 디자인(확정안) 옮기기 — 사전·연표·지도·저장 네 탭, 글꼴(함렛·Noto Sans KR)·색, 삽화. 항목 화면은 구성만 먼저 옮겼다
 
 **품질**
 - [ ] 골든 테스트로 카드·상세 레이아웃 회귀 방지
@@ -592,7 +636,7 @@ python3 tools/build_seed.py && python3 tools/build_preview.py
 ## 8. 라이선스
 
 - **코드** (`lib/`, `test/`, `tools/*.py`, HTML 뼈대) — MIT, `LICENSE`.
-- **기관차 데이터·설명문·참고문헌 정리** (`assets/data/*.json`, `tools/build_seed.py`·`verified.py`·`references.py` 의 본문) — CC BY-SA 4.0, `LICENSE-DATA`.
+- **기관차 데이터·설명문·참고문헌 정리** (`assets/data/*.json`, `tools/manuscript/entries.json`(자료조사 원고), `tools/build_seed.py`·`verified.py`·`references.py` 의 본문) — CC BY-SA 4.0, `LICENSE-DATA`.
   제원·연도 같은 사실 자체는 저작권 대상이 아니고, 선정·배열·요약문·대조 설명이 대상이다. 위키백과(CC BY-SA)를 참고했으므로 같은 조건으로 연다.
 - **제3자 자료** — 국기 SVG flag-icons(MIT), 지도 폴리곤 Natural Earth(퍼블릭 도메인)·world-atlas(ISC), 선택 기능의 OSM 타일(ODbL): `THIRD_PARTY_NOTICES.md`.
   pub 패키지 라이선스는 앱 설정의 '오픈소스 라이선스'(`showLicensePage`)에 Flutter 가 모아 보여준다.
